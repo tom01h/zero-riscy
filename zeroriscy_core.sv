@@ -50,11 +50,11 @@ module zeroriscy_core
   input  logic [31:0] boot_addr_i,
 
   // Instruction memory interface
-  output logic                         instr_req_o,
-  input  logic                         instr_gnt_i,
-  input  logic                         instr_rvalid_i,
-  output logic                  [31:0] instr_addr_o,
-  input  logic                  [31:0] instr_rdata_i,
+  output logic        instr_req_o,
+  input  logic        instr_gnt_i,
+  input  logic        instr_rvalid_i,
+  output logic [31:0] instr_addr_o,
+  input  logic [31:0] instr_rdata_i,
 
   // Data memory interface
   output logic        data_req_o,
@@ -181,7 +181,10 @@ module zeroriscy_core
   logic        instr_req_int;    // Id stage asserts a req to instruction core interface
 
   // Interrupts
+  logic        illegal_csr;
   logic        m_irq_enable;
+  PrivLvl_t    m_prv;
+  logic [31:0] mtvec;
   logic [31:0] mepc;
 
   logic        csr_save_cause;
@@ -288,9 +291,6 @@ module zeroriscy_core
     .clk                 ( clk               ),
     .rst_n               ( rst_ni            ),
 
-    // boot address (trap vector location)
-    .boot_addr_i         ( boot_addr_i       ),
-
     // instruction request control
     .req_i               ( instr_req_int     ),
 
@@ -312,6 +312,7 @@ module zeroriscy_core
     // control signals
     .clear_instr_valid_i ( clear_instr_valid ),
     .pc_set_i            ( pc_set            ),
+    .exception_pc_i      ( mtvec             ), // exception address
     .exception_pc_reg_i  ( mepc              ), // exception return address
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
@@ -424,7 +425,9 @@ module zeroriscy_core
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
     .irq_id_i                     ( irq_id_i             ),
+    .illegal_csr_i                ( illegal_csr          ),
     .m_irq_enable_i               ( m_irq_enable         ),
+    .m_prv_i                      ( m_prv                ),
     .irq_ack_o                    ( irq_ack_o            ),
     .irq_id_o                     ( irq_id_o             ),
 
@@ -571,7 +574,7 @@ module zeroriscy_core
     .core_id_i               ( core_id_i          ),
     .cluster_id_i            ( cluster_id_i       ),
     // boot address
-    .boot_addr_i             ( boot_addr_i[31:8]  ),
+    .boot_addr_i             ( boot_addr_i        ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
@@ -580,7 +583,10 @@ module zeroriscy_core
     .csr_rdata_o             ( csr_rdata          ),
 
     // Interrupt related control signals
+    .illegal_csr_o           ( illegal_csr        ),
     .m_irq_enable_o          ( m_irq_enable       ),
+    .m_prv_o                 ( m_prv              ),
+    .mtvec_o                 ( mtvec              ),
     .mepc_o                  ( mepc               ),
 
     .pc_if_i                 ( pc_if              ),

@@ -116,7 +116,9 @@ module zeroriscy_id_stage
     // Interrupt signals
     input  logic        irq_i,
     input  logic [4:0]  irq_id_i,
+    input  logic        illegal_csr_i,
     input  logic        m_irq_enable_i,
+    input  PrivLvl_t    m_prv_i,
     output logic        irq_ack_o,
     output logic [4:0]  irq_id_o,
     output logic [5:0]  exc_cause_o,
@@ -523,7 +525,7 @@ module zeroriscy_id_stage
 
     // decoder related signals
     .deassert_we_o                  ( deassert_we            ),
-    .illegal_insn_i                 ( illegal_insn_dec | illegal_reg_rv32e ),
+    .illegal_insn_i                 ( illegal_insn_dec | illegal_reg_rv32e | illegal_csr_i ),
     .ecall_insn_i                   ( ecall_insn_dec         ),
     .mret_insn_i                    ( mret_insn_dec          ),
     .pipe_flush_i                   ( pipe_flush_dec         ),
@@ -557,6 +559,7 @@ module zeroriscy_id_stage
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
     .m_IE_i                         ( m_irq_enable_i         ),
+    .m_prv_i                        ( m_prv_i                ),
 
     .irq_ack_o                      ( irq_ack_o              ),
     .irq_id_o                       ( irq_id_o               ),

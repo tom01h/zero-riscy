@@ -80,6 +80,7 @@ module zeroriscy_controller
   input  logic        irq_req_ctrl_i,
   input  logic [4:0]  irq_id_ctrl_i,
   input  logic        m_IE_i,                     // interrupt enable bit from CSR (M mode)
+  input  PrivLvl_t    m_prv_i,
 
   output logic        irq_ack_o,
   output logic [4:0]  irq_id_o,
@@ -431,8 +432,8 @@ module zeroriscy_controller
               csr_save_id_o         = 1'b1;
               csr_save_cause_o      = 1'b1;
               exc_pc_mux_o          = EXC_PC_ECALL;
-              exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
-              csr_cause_o           = EXC_CAUSE_ECALL_MMODE;
+              exc_cause_o           = EXC_CAUSE_ECALL | m_prv_i;
+              csr_cause_o           = EXC_CAUSE_ECALL | m_prv_i;
               dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
           end
           illegal_insn_i: begin

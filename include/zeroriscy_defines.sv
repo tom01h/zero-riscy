@@ -290,7 +290,7 @@ parameter EXC_PC_IRQ       = 2'b11;
 // Exception Cause
 parameter EXC_CAUSE_ILLEGAL_INSN = 6'h02;
 parameter EXC_CAUSE_BREAKPOINT   = 6'h03;
-parameter EXC_CAUSE_ECALL_MMODE  = 6'h0B;
+parameter EXC_CAUSE_ECALL        = 6'h08;
 
 // Exceptions offsets
 // target address = {boot_addr[31:8], EXC_OFF} (boot_addr must be 32 BYTE aligned!)

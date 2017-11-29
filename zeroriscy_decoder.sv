@@ -545,6 +545,24 @@ module zeroriscy_decoder
         end
 
       end
+      OPCODE_FENCE: begin
+         unique case (instr_rdata_i[14:12])
+           3'b000:  // FENCE
+             begin
+             end
+
+           3'b001:  // FENCEI
+             begin
+                // flush pipeline
+                pipe_flush_o = 1'b1;
+             end
+
+           default:
+             begin
+                illegal_insn_o = 1'b1;
+             end
+         endcase
+      end
       default: begin
         illegal_insn_o = 1'b1;
       end
