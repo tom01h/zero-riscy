@@ -563,6 +563,20 @@ module zeroriscy_decoder
              end
          endcase
       end
+
+
+      //////////////////////////
+      //   ____  _   _ _   _  //
+      //  | __ )| \ | | \ | | //
+      //  |  _ \|  \| |  \| | //
+      //  | |_) | |\  | |\  | //
+      //  |____/|_| \_|_| \_| //
+      //                      //
+      //////////////////////////
+      OPCODE_BNN: begin  // Register-Register ALU operation
+         regfile_we     = 1'b1;
+         alu_operator_o = ALU_ADD;   // Add
+      end
       default: begin
         illegal_insn_o = 1'b1;
       end

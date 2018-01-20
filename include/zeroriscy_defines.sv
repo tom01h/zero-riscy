@@ -45,6 +45,7 @@ parameter OPCODE_JALR      = 7'h67;
 parameter OPCODE_JAL       = 7'h6f;
 parameter OPCODE_AUIPC     = 7'h17;
 parameter OPCODE_LUI       = 7'h37;
+parameter OPCODE_BNN       = 7'h0b;
 
 // those opcodes are now used for PULP custom instructions
 // parameter OPCODE_CUST0     = 7'h0b
