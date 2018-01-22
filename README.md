@@ -1,3 +1,11 @@
+# zero-riscy をコピーしてきて BNN 命令を追加しています
+
+オリジナルの [github はここ](https://github.com/pulp-platform/zero-riscy)
+
+↓はオリジナルの README
+
+---
+
 # zero-riscy: RISC-V Core
 
 *zero-riscy** is a small 2-stage RISC-V core derived from RI5CY.

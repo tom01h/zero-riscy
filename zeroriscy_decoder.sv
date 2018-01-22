@@ -63,6 +63,11 @@ module zeroriscy_decoder
   output logic        div_int_en_o,           // perform integer division or reminder
   output logic [1:0]  multdiv_operator_o,
   output logic [1:0]  multdiv_signed_mode_o,
+
+  // BNN related control signals
+  output logic        bnn_en_o,               // perform BNN
+  output logic [2:0]  bnn_operator_o,
+
   // register file related signals
   output logic        regfile_we_o,            // write enable for regfile
 
@@ -121,6 +126,9 @@ module zeroriscy_decoder
     div_int_en                  = 1'b0;
     multdiv_operator_o          = MD_OP_MULL;
     multdiv_signed_mode_o       = 2'b00;
+
+     bnn_en_o                   = 1'b0;
+     bnn_operator_o             = 3'b000;
 
     regfile_we                  = 1'b0;
 
@@ -573,9 +581,33 @@ module zeroriscy_decoder
       //  |____/|_| \_|_| \_| //
       //                      //
       //////////////////////////
-      OPCODE_BNN: begin  // Register-Register ALU operation
-         regfile_we     = 1'b1;
-         alu_operator_o = ALU_ADD;   // Add
+      OPCODE_BNN: begin  // BNN operation
+         unique case (instr_rdata_i[14:12])
+           3'b000:begin // Ini
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b000;
+           end
+           3'b001:begin // Acc
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b001;
+           end
+           3'b010:begin // Pool
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b010;
+           end
+           3'b011:begin // Norm
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b011;
+           end
+           3'b100:begin // Activ
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b100;
+              regfile_we = 1'b1;
+           end
+           default: begin
+              illegal_insn_o = 1'b1;
+           end
+         endcase
       end
       default: begin
         illegal_insn_o = 1'b1;

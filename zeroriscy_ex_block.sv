@@ -55,6 +55,12 @@ module zeroriscy_ex_block
   output logic [31:0]             alu_adder_result_ex_o,
   output logic [31:0]             regfile_wdata_ex_o,
 
+  // BNN
+  input logic                     bnn_en_i,
+  input logic [2:0]               bnn_operator_i,
+  input logic [31:0]              bnn_operand_addr_i,
+  input logic [31:0]              bnn_operand_data_i,
+
   // To IF: Jump and branch target and decision
   output logic [31:0]             jump_target_o,
   output logic                    branch_decision_o,
@@ -68,13 +74,15 @@ module zeroriscy_ex_block
 
   localparam MULT_TYPE = 1; //0 is SLOW
 
-  logic [31:0] alu_result, multdiv_result;
+  logic [31:0] alu_result, multdiv_result, bnn_result;
 
   logic [32:0] multdiv_alu_operand_b, multdiv_alu_operand_a;
   logic [33:0] alu_adder_result_ext;
   logic        alu_cmp_result, alu_is_equal_result;
   logic        multdiv_ready, multdiv_en_sel;
   logic        multdiv_en;
+
+  logic        bnn_ready;
 
 /*
   The multdiv_i output is never selected if RV32M=0
@@ -91,7 +99,17 @@ end else begin
 end
 endgenerate
 
-  assign regfile_wdata_ex_o = multdiv_en ? multdiv_result : alu_result;
+  always_comb
+  begin
+      unique case (1'b1)
+        multdiv_en:
+          regfile_wdata_ex_o = multdiv_result;
+        bnn_en_i:
+          regfile_wdata_ex_o = bnn_result;
+        default:
+          regfile_wdata_ex_o = alu_result;
+      endcase
+  end
 
   // branch handling
   assign branch_decision_o  = alu_cmp_result;
@@ -172,6 +190,19 @@ endgenerate
   end
   endgenerate
 
+  zeroriscy_bnn bnn_i
+  (
+    .clk                 ( clk                       ),
+    .rst_n               ( rst_n                     ),
+    .bnn_en_i            ( bnn_en_i                  ),
+    .bnn_operator_i      ( bnn_operator_i            ),
+    .bnn_addr_i          ( bnn_operand_addr_i        ),
+    .bnn_data_i          ( bnn_operand_data_i        ),
+
+    .bnn_result_o        ( bnn_result ),
+    .bnn_ready_o         ( bnn_ready )
+   );
+
   always_comb
   begin
       unique case (1'b1)
@@ -179,6 +210,8 @@ endgenerate
           ex_ready_o = multdiv_ready;
         lsu_en_i:
           ex_ready_o = lsu_ready_ex_i;
+        bnn_en_i:
+          ex_ready_o = bnn_ready;
         default:
           //1 Cycle case
           ex_ready_o = 1'b1;

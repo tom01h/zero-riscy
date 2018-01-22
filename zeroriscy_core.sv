@@ -143,6 +143,12 @@ module zeroriscy_core
   logic [31:0] multdiv_operand_a_ex;
   logic [31:0] multdiv_operand_b_ex;
 
+  // BNN
+  logic        bnn_en_ex;
+  logic [2:0]  bnn_operator_ex;
+  logic [31:0] bnn_operand_addr_ex;
+  logic [31:0] bnn_operand_data_ex;
+
   // CSR control
   logic        csr_access_ex;
   logic  [1:0] csr_op_ex;
@@ -401,6 +407,11 @@ module zeroriscy_core
     .multdiv_operand_a_ex_o       ( multdiv_operand_a_ex   ),
     .multdiv_operand_b_ex_o       ( multdiv_operand_b_ex   ),
 
+    .bnn_en_ex_o                  ( bnn_en_ex            ),
+    .bnn_operator_ex_o            ( bnn_operator_ex      ),
+    .bnn_operand_addr_ex_o        ( bnn_operand_addr_ex  ),
+    .bnn_operand_data_ex_o        ( bnn_operand_data_ex  ),
+
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
@@ -489,6 +500,12 @@ module zeroriscy_core
     .multdiv_operand_b_i        ( multdiv_operand_b_ex  ),
     .alu_adder_result_ex_o      ( alu_adder_result_ex   ), // from ALU to LSU
     .regfile_wdata_ex_o         ( regfile_wdata_ex      ),
+
+    // BNN
+    .bnn_en_i                   ( bnn_en_ex             ),
+    .bnn_operator_i             ( bnn_operator_ex       ),
+    .bnn_operand_addr_i         ( bnn_operand_addr_ex   ),
+    .bnn_operand_data_i         ( bnn_operand_data_ex   ),
 
     // To IF: Jump and branch target and decision
     .jump_target_o              ( jump_target_ex        ),
