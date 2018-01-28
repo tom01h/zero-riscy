@@ -138,7 +138,7 @@ module ram0 (clk, addr, dout);
    input [15:0] addr;
    output [1023:0] dout;
 `include "param0"
-   reg [1024:0]    dout;
+   reg [1023:0]    dout;
 
    always @(posedge clk)
      begin
