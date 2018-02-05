@@ -118,7 +118,7 @@ module zeroriscy_tracer
         $sformat(fn, "trace_core.log");
         $display("[TRACER] Output filename is: %s", fn);
         f = $fopen(fn, "w");
-        $fwrite(f, "         Cycles PC       Instr    Mnemonic\n");
+        $fwrite(f, "         Cycles PC       Instr    Mnemonic                             | \n");
 
      end
 
@@ -149,7 +149,7 @@ module zeroriscy_tracer
       input string       str
       );
       begin
-         $fwrite(f, "%15d %h %h %36s",
+         $fwrite(f, "%15d %h %h %36s  ",
                  cycles,
                  pc,
                  instr,

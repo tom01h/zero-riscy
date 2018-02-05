@@ -253,7 +253,7 @@ module zeroriscy_cs_registers
                            upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
                            mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
 //                           mpp:  csr_wdata_int[`MSTATUS_MPP_BITS],
-                           mpp:  {2{|csr_wdata_int[`MSTATUS_MPP_BITS]}},
+                           mpp:  PrivLvl_t'({2{|csr_wdata_int[`MSTATUS_MPP_BITS]}}),
                            prv:  mstatus_q.prv
                            };
           end
