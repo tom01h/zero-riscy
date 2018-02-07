@@ -272,14 +272,14 @@ module zeroriscy_tracer
            size = instr[30:28];
 
          case (size)
-           3'b000: mnemonic = "lb              ";
-           3'b001: mnemonic = "lh              ";
-           3'b010: mnemonic = "lw              ";
-           3'b100: mnemonic = "lbu             ";
-           3'b101: mnemonic = "lhu             ";
-           3'b110: mnemonic = "p.elw           ";
-           3'b011,
-             3'b111: begin
+           0: mnemonic = "lb              ";
+           1: mnemonic = "lh              ";
+           2: mnemonic = "lw              ";
+           4: mnemonic = "lbu             ";
+           5: mnemonic = "lhu             ";
+           6: mnemonic = "p.elw           ";
+           3,
+             7: begin
                 printMnemonic("INVALID                             ");
                 return;
              end
@@ -305,10 +305,10 @@ module zeroriscy_tracer
       string mnemonic;
       begin
          case (instr[13:12])
-           2'b00:  mnemonic = "sb              ";
-           2'b01:  mnemonic = "sh              ";
-           2'b10:  mnemonic = "sw              ";
-           2'b11: begin
+           0: mnemonic = "sb              ";
+           1: mnemonic = "sh              ";
+           2: mnemonic = "sw              ";
+           3: begin
               printMnemonic("INVALID                             ");
               return;
            end
