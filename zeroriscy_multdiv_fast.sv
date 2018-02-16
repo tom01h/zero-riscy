@@ -35,16 +35,21 @@ module zeroriscy_multdiv_fast
   input  logic  [1:0] signed_mode_i,
   input  logic [31:0] op_a_i,
   input  logic [31:0] op_b_i,
-  input  logic [33:0] alu_adder_ext_i,
-  input  logic [31:0] alu_adder_i,
-  input  logic        equal_to_zero,
-
-  output logic [32:0] alu_operand_a_o,
-  output logic [32:0] alu_operand_b_o,
 
   output logic [31:0] multdiv_result_o,
   output logic        ready_o
 );
+/////////////////
+   logic [32:0]       alu_operand_a_o;
+   logic [32:0]       alu_operand_b_o;
+   logic [33:0]       alu_adder_ext_i;
+   logic [31:0]       alu_adder_i;
+   logic              equal_to_zero;
+
+   assign alu_adder_ext_i = $unsigned(alu_operand_a_o) + $unsigned(alu_operand_b_o);
+   assign alu_adder_i     = alu_adder_ext_i[32:1];
+   assign equal_to_zero   = (alu_operand_b_o[32:1]==32'hffffffff);
+/////////////////
 
   logic [ 4:0] div_counter_q, div_counter_n;
   enum logic [1:0] {ALBL, ALBH, AHBL, AHBH } mult_state_q, mult_state_n;

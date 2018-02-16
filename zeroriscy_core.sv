@@ -477,8 +477,6 @@ module zeroriscy_core
 
   zeroriscy_ex_block
   #(
-    //change the localparam MULT_TYPE to 0 or 1
-    //if you want a SLOW or FAST multiplier
     .RV32M(RV32M)
   )
   ex_block_i

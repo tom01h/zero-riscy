@@ -72,14 +72,10 @@ module zeroriscy_ex_block
   output logic                    ex_ready_o      // EX stage gets new data
 );
 
-  localparam MULT_TYPE = 1; //0 is SLOW
-
   logic [31:0] alu_result, multdiv_result, bnn_result;
 
-  logic [32:0] multdiv_alu_operand_b, multdiv_alu_operand_a;
-  logic [33:0] alu_adder_result_ext;
-  logic        alu_cmp_result, alu_is_equal_result;
-  logic        multdiv_ready, multdiv_en_sel;
+  logic        alu_cmp_result;
+  logic        multdiv_ready;
   logic        multdiv_en;
 
   logic        bnn_ready;
@@ -91,10 +87,8 @@ module zeroriscy_ex_block
 */
 generate
 if (RV32M) begin
-  assign multdiv_en_sel     = MULT_TYPE == 0 ? mult_en_i | div_en_i : div_en_i;
   assign multdiv_en         = mult_en_i | div_en_i;
 end else begin
-  assign multdiv_en_sel     = 1'b0;
   assign multdiv_en         = 1'b0;
 end
 endgenerate
@@ -129,14 +123,9 @@ endgenerate
     .operator_i          ( alu_operator_i            ),
     .operand_a_i         ( alu_operand_a_i           ),
     .operand_b_i         ( alu_operand_b_i           ),
-    .multdiv_operand_a_i ( multdiv_alu_operand_a     ),
-    .multdiv_operand_b_i ( multdiv_alu_operand_b     ),
-    .multdiv_en_i        ( multdiv_en_sel            ),
     .adder_result_o      ( alu_adder_result_ex_o     ),
-    .adder_result_ext_o  ( alu_adder_result_ext      ),
     .result_o            ( alu_result                ),
-    .comparison_result_o ( alu_cmp_result            ),
-    .is_equal_result_o   ( alu_is_equal_result       )
+    .comparison_result_o ( alu_cmp_result            )
   );
 
   ////////////////////////////////////////////////////////////////
@@ -148,27 +137,6 @@ endgenerate
   //                                                            //
   ////////////////////////////////////////////////////////////////
 
-  generate
-  if (MULT_TYPE == 0) begin : multdiv_slow
-    zeroriscy_multdiv_slow multdiv_i
-    (
-     .clk                ( clk                   ),
-     .rst_n              ( rst_n                 ),
-     .mult_en_i          ( mult_en_i             ),
-     .div_en_i           ( div_en_i              ),
-     .operator_i         ( multdiv_operator_i    ),
-     .signed_mode_i      ( multdiv_signed_mode_i ),
-     .op_a_i             ( multdiv_operand_a_i   ),
-     .op_b_i             ( multdiv_operand_b_i   ),
-     .alu_adder_ext_i    ( alu_adder_result_ext  ),
-     .alu_adder_i        ( alu_adder_result_ex_o ),
-     .equal_to_zero      ( alu_is_equal_result   ),
-     .ready_o            ( multdiv_ready         ),
-     .alu_operand_a_o    ( multdiv_alu_operand_a ),
-     .alu_operand_b_o    ( multdiv_alu_operand_b ),
-     .multdiv_result_o   ( multdiv_result        )
-    );
-  end else begin: multdiv_fast
     zeroriscy_multdiv_fast multdiv_i
      (
      .clk                ( clk                   ),
@@ -179,16 +147,9 @@ endgenerate
      .signed_mode_i      ( multdiv_signed_mode_i ),
      .op_a_i             ( multdiv_operand_a_i   ),
      .op_b_i             ( multdiv_operand_b_i   ),
-     .alu_operand_a_o    ( multdiv_alu_operand_a ),
-     .alu_operand_b_o    ( multdiv_alu_operand_b ),
-     .alu_adder_ext_i    ( alu_adder_result_ext  ),
-     .alu_adder_i        ( alu_adder_result_ex_o ),
-     .equal_to_zero      ( alu_is_equal_result   ),
      .ready_o            ( multdiv_ready         ),
      .multdiv_result_o   ( multdiv_result        )
     );
-  end
-  endgenerate
 
   zeroriscy_bnn bnn_i
   (

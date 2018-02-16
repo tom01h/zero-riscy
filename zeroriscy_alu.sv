@@ -33,21 +33,13 @@ module zeroriscy_alu
   input  logic [31:0]              operand_a_i,
   input  logic [31:0]              operand_b_i,
 
-  input  logic [32:0]              multdiv_operand_a_i,
-  input  logic [32:0]              multdiv_operand_b_i,
-
-  input  logic                     multdiv_en_i,
-
   output logic [31:0]              adder_result_o,
-  output logic [33:0]              adder_result_ext_o,
 
   output logic [31:0]              result_o,
-  output logic                     comparison_result_o,
-  output logic                     is_equal_result_o
+  output logic                     comparison_result_o
 );
 
   logic [31:0] operand_a_rev;
-  logic [32:0] operand_b_neg;
 
   // bit reverse operand_a for left shifts and bit counting
   generate
@@ -69,7 +61,7 @@ module zeroriscy_alu
   /////////////////////////////////////
 
   logic        adder_op_b_negate; 
-  logic [32:0] adder_in_a, adder_in_b;
+  logic [31:0] adder_in_a, adder_in_b;
   logic [31:0] adder_result;
 
   always_comb
@@ -94,18 +86,15 @@ module zeroriscy_alu
   end
 
   // prepare operand a
-  assign adder_in_a    = multdiv_en_i ? multdiv_operand_a_i : {operand_a_i,1'b1};
+  assign adder_in_a    = operand_a_i;
 
   // prepare operand b
-  assign operand_b_neg = {operand_b_i,1'b0} ^ {33{adder_op_b_negate}};
-  assign adder_in_b    = multdiv_en_i ? multdiv_operand_b_i : operand_b_neg ;
+  assign adder_in_b    = operand_b_i ^ {32{adder_op_b_negate}};
 
   // actual adder
-  assign adder_result_ext_o = $unsigned(adder_in_a) + $unsigned(adder_in_b);
-
-  assign adder_result       = adder_result_ext_o[32:1];
+  assign adder_result   = $unsigned(adder_in_a) + $unsigned(adder_in_b) + adder_op_b_negate;
   
-  assign adder_result_o     = adder_result;
+  assign adder_result_o = adder_result;
 
   ////////////////////////////////////////
   //  ____  _   _ ___ _____ _____       //
@@ -187,7 +176,6 @@ module zeroriscy_alu
   end
 
   assign is_equal = (adder_result == 32'b0);
-  assign is_equal_result_o = is_equal;
   
 
   // Is greater equal
