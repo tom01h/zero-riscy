@@ -604,6 +604,19 @@ module zeroriscy_decoder
               bnn_operator_o = 3'b100;
               regfile_we = 1'b1;
            end
+           3'b101:begin // Acc8
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b101;
+              regfile_we = 1'b1;
+           end
+           3'b110:begin // Set
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b110;
+           end
+           3'b111:begin // Norm8
+              bnn_en_o = 1'b1;
+              bnn_operator_o = 3'b111;
+           end
            default: begin
               illegal_insn_o = 1'b1;
            end

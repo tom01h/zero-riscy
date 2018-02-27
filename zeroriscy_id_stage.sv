@@ -750,7 +750,7 @@ module zeroriscy_id_stage
           bnn_en: begin
             //BNN operation
             regfile_we      = 1'b0;
-            if(bnn_operator==3'b100)begin
+            if((bnn_operator==3'b100)|(bnn_operator==3'b101))begin
                id_wb_fsm_ns    = WAIT_MULTICYCLE;
                bnn_stall       = 1'b1;
                instr_multicyle = 1'b1;

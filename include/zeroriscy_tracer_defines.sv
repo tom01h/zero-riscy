@@ -70,5 +70,14 @@ parameter INSTR_PMUH     =  { 7'b0000001, 10'b?, 3'b001, 5'b?, OPCODE_OP };
 parameter INSTR_PMULHSU  =  { 7'b0000001, 10'b?, 3'b010, 5'b?, OPCODE_OP };
 parameter INSTR_PMULHU   =  { 7'b0000001, 10'b?, 3'b011, 5'b?, OPCODE_OP };
 
+// RV32Xbnn
+parameter INSTR_INI      =  { 7'b?, 10'b?, 3'b000, 5'b?, OPCODE_BNN };
+parameter INSTR_ACC      =  { 7'b?, 10'b?, 3'b001, 5'b?, OPCODE_BNN };
+parameter INSTR_POOL     =  { 7'b?, 10'b?, 3'b010, 5'b?, OPCODE_BNN };
+parameter INSTR_NORM     =  { 7'b?, 10'b?, 3'b011, 5'b?, OPCODE_BNN };
+parameter INSTR_ACTIV    =  { 7'b?, 10'b?, 3'b100, 5'b?, OPCODE_BNN };
+parameter INSTR_ACC8     =  { 7'b?, 10'b?, 3'b101, 5'b?, OPCODE_BNN };
+parameter INSTR_SET      =  { 7'b?, 10'b?, 3'b110, 5'b?, OPCODE_BNN };
+parameter INSTR_NORM8    =  { 7'b?, 10'b?, 3'b111, 5'b?, OPCODE_BNN };
 
 endpackage
