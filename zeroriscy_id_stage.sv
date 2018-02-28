@@ -95,6 +95,7 @@ module zeroriscy_id_stage
     // BNN
     output logic        bnn_en_ex_o,
     output logic [2:0]  bnn_operator_ex_o,
+    output logic [6:0]  bnn_param_ex_o,
     output logic [31:0] bnn_operand_addr_ex_o,
     output logic [31:0] bnn_operand_data_ex_o,
 
@@ -244,6 +245,7 @@ module zeroriscy_id_stage
   // BNN Control
   logic        bnn_en;      // use BNN
   logic [2:0]  bnn_operator;
+  logic [6:0]  bnn_param;
 
   // Data Memory Control
   logic        data_we_id;
@@ -497,6 +499,7 @@ module zeroriscy_id_stage
 
     .bnn_en_o                        ( bnn_en                    ),
     .bnn_operator_o                  ( bnn_operator              ),
+    .bnn_param_o                     ( bnn_param                 ),
     // Register file control signals
     .regfile_we_o                    ( regfile_we_id             ),
 
@@ -678,6 +681,7 @@ module zeroriscy_id_stage
   assign bnn_operand_data_ex_o       = alu_operand_b;
 
   assign bnn_operator_ex_o           = bnn_operator;
+  assign bnn_param_ex_o              = bnn_param;
 
   enum logic { IDLE, WAIT_MULTICYCLE } id_wb_fsm_cs, id_wb_fsm_ns;
 

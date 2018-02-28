@@ -58,6 +58,7 @@ module zeroriscy_ex_block
   // BNN
   input logic                     bnn_en_i,
   input logic [2:0]               bnn_operator_i,
+  input logic [6:0]               bnn_param_i,
   input logic [31:0]              bnn_operand_addr_i,
   input logic [31:0]              bnn_operand_data_i,
 
@@ -157,6 +158,7 @@ endgenerate
     .rst_n               ( rst_n                     ),
     .bnn_en_i            ( bnn_en_i                  ),
     .bnn_operator_i      ( bnn_operator_i            ),
+    .bnn_param_i         ( bnn_param_i               ),
     .bnn_addr_i          ( bnn_operand_addr_i        ),
     .bnn_data_i          ( bnn_operand_data_i        ),
 

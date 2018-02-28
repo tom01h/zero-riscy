@@ -19,6 +19,7 @@ module zeroriscy_bnn
    // signals from ex stage
    input logic         bnn_en_i,
    input logic [2:0]   bnn_operator_i,
+   input logic [6:0]   bnn_param_i,
    input logic [31:0]  bnn_addr_i,
    input logic [31:0]  bnn_data_i,
 
@@ -29,12 +30,14 @@ module zeroriscy_bnn
 
    reg [1023:0]        param;
 
-   wire [15:0]         param_addr = (bnn_operator_i != 3'b101) ? bnn_addr_i[15:0] : {1'b0,bnn_addr_i[7:4]};
+   wire [15:0]         param_addr = (bnn_operator_i != 3'b101) ? bnn_addr_i[15:0]
+                                                               : {1'b0,bnn_addr_i[7:4]}+bnn_param_i[4:0];
    
    ram0 ram0 (clk, param_addr[15:0], param);
 
    reg                 bnn_en_1;
    reg [2:0]           com_1;
+   reg [1:0]           sft_1;
    reg [31:0]          addr_1;
    reg [31:0]          data_1;
    reg                 busy;
@@ -42,6 +45,7 @@ module zeroriscy_bnn
    always_ff @(posedge clk)begin
       addr_1[31:0] <= bnn_addr_i;
       data_1[31:0] <= bnn_data_i;
+      sft_1[1:0]   <= bnn_param_i[6:5];
       if(bnn_en_i&~busy)begin
          bnn_en_1 <= 1'b1;
          com_1[2:0] <= bnn_operator_i;
@@ -53,12 +57,14 @@ module zeroriscy_bnn
 
 // 1st stage for IP8
    reg [2:0]           com_2;
+   reg [1:0]           sft_2;
    reg [23:0]          inA_2;
    reg [23:0]          inB0_2;
    reg [23:0]          inB1_2;
    reg [31:0]          inC_2;
    always_ff @(posedge clk)begin
       com_2[2:0]  <= com_1[2:0];
+      sft_2[1:0]  <= sft_1[1:0];
       inA_2[23:0] <= addr_1[31:8];
       inC_2[31:0] <= data_1[31:0];
       case(addr_1[3:0])
@@ -82,10 +88,10 @@ module zeroriscy_bnn
    end
 
 // 2nd stage for IP8
-   wire signed [16:0]  ip0 = ($signed(inA_2[23:16])*$signed(inB0_2[23:16]) +
+   wire signed [19:0]  ip0 = ($signed(inA_2[23:16])*$signed(inB0_2[23:16]) +
                               $signed(inA_2[15:8] )*$signed(inB0_2[15:8])  +
                               $signed(inA_2[7:0]  )*$signed(inB0_2[7:0] )   );
-   wire signed [16:0]  ip1 = ($signed(inA_2[23:16])*$signed(inB1_2[23:16]) +
+   wire signed [19:0]  ip1 = ($signed(inA_2[23:16])*$signed(inB1_2[23:16]) +
                               $signed(inA_2[15:8] )*$signed(inB1_2[15:8])  +
                               $signed(inA_2[7:0]  )*$signed(inB1_2[7:0] )   );
    reg [2:0]           com_3;
@@ -93,8 +99,24 @@ module zeroriscy_bnn
    reg [15:0]          IP1_3;
    always_ff @(posedge clk)begin
       com_3[2:0] <= com_2[2:0];
-      IP0_3 <= ip0[16:1]+inC_2[31:16];
-      IP1_3 <= ip1[16:1]+inC_2[15:0];
+      case(sft_2)
+        2'b00:begin
+           IP0_3 <= ip0[15:0]+inC_2[31:16];
+           IP1_3 <= ip1[15:0]+inC_2[15:0];
+        end
+        2'b01:begin
+           IP0_3 <= ip0[16:1]+inC_2[31:16];
+           IP1_3 <= ip1[16:1]+inC_2[15:0];
+        end
+        2'b10:begin
+           IP0_3 <= ip0[17:2]+inC_2[31:16];
+           IP1_3 <= ip1[17:2]+inC_2[15:0];
+        end
+        2'b11:begin
+           IP0_3 <= ip0[19:4]+inC_2[31:16];
+           IP1_3 <= ip1[19:4]+inC_2[15:0];
+        end
+      endcase
    end
 
 // 3rd stage for IP8

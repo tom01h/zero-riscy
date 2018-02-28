@@ -67,6 +67,7 @@ module zeroriscy_decoder
   // BNN related control signals
   output logic        bnn_en_o,               // perform BNN
   output logic [2:0]  bnn_operator_o,
+  output logic [6:0]  bnn_param_o,
 
   // register file related signals
   output logic        regfile_we_o,            // write enable for regfile
@@ -129,6 +130,7 @@ module zeroriscy_decoder
 
      bnn_en_o                   = 1'b0;
      bnn_operator_o             = 3'b000;
+     bnn_param_o                = 7'b0000000;
 
     regfile_we                  = 1'b0;
 
@@ -607,6 +609,7 @@ module zeroriscy_decoder
            3'b101:begin // Acc8
               bnn_en_o = 1'b1;
               bnn_operator_o = 3'b101;
+              bnn_param_o = instr_rdata_i[31:25];
               regfile_we = 1'b1;
            end
            3'b110:begin // Set
