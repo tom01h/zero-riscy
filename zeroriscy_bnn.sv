@@ -41,12 +41,14 @@ module zeroriscy_bnn
    reg [31:0]          addr_1;
    reg [31:0]          data_1;
    reg                 busy;
+   wire                bnn_en = bnn_en_i&~busy;
+
 // input stage
    always_ff @(posedge clk)begin
       addr_1[31:0] <= bnn_addr_i;
       data_1[31:0] <= bnn_data_i;
       sft_1[1:0]   <= bnn_param_i[6:5];
-      if(bnn_en_i&~busy)begin
+      if(bnn_en)begin
          bnn_en_1 <= 1'b1;
          com_1[2:0] <= bnn_operator_i;
       end else begin
@@ -126,8 +128,8 @@ module zeroriscy_bnn
    assign bnn_ready_o = (~bnn_en_1|(com_1!=3'b100)&(com_1!=3'b101))&(com_2!=3'b101);
 
    always_ff @(posedge clk)begin
-      if((bnn_en_i&(bnn_operator_i[2:0]==3'b100))|
-         (bnn_en_i&(bnn_operator_i[2:0]==3'b101))|
+      if((bnn_en  &(bnn_operator_i[2:0]==3'b100))|
+         (bnn_en  &(bnn_operator_i[2:0]==3'b101))|
          (bnn_en_1&         (com_1[2:0]==3'b100))|
          (bnn_en_1&         (com_1[2:0]==3'b101))|
          (                  (com_2[2:0]==3'b101))  )
@@ -140,7 +142,7 @@ module zeroriscy_bnn
    generate begin
       for(g=0;g<32;g=g+1) begin : estimate_block
          estimate_core core
-            (.clk(clk), .com_1(com_1[2:0]), .seten_1({(g==addr_1),(g==addr_1+1)}),
+            (.clk(clk), .com_1(com_1[2:0]), .seten_1({(g=={addr_1,1'b0}),(g=={addr_1,1'b1})}),
              .data_1(data_1[31:0]), .param(param[32*(31-g)+31:32*(31-g)+0]),
              .activ(bnn_result[g])
              );
