@@ -1,4 +1,4 @@
-`ifdef SYNTHESIS
+`ifdef NONE
 reg [32*32-1:0] mem [0:0];
 `else
 reg [32*32-1:0] mem [0:568-1] = '{
