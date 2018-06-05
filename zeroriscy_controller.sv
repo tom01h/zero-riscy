@@ -64,9 +64,6 @@ module zeroriscy_controller
   output logic [2:0]  pc_mux_o,                   // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
   output logic [1:0]  exc_pc_mux_o,               // Selects target PC for exception
 
-  // LSU
-  input  logic        data_misaligned_i,
-
   // jump/branch signals
   input  logic        branch_in_id_i,             // branch in id
   input  logic        branch_taken_ex_i,          // branch taken signal
@@ -104,9 +101,6 @@ module zeroriscy_controller
 
   input  logic [DBG_SETS_W-1:0] dbg_settings_i,
   output logic        dbg_trap_o,
-
-  // forwarding signals
-  output logic [1:0]  operand_a_fw_mux_sel_o,     // regfile ra data selector form ID stage
 
   // stall signals
   output logic        halt_if_o,
@@ -508,9 +502,6 @@ module zeroriscy_controller
     if (illegal_insn_i)
       deassert_we_o = 1'b1;
   end
-
-  // Forwarding control unit
-  assign operand_a_fw_mux_sel_o = data_misaligned_i ? SEL_MISALIGNED : SEL_REGFILE;
 
   // update registers
   always_ff @(posedge clk , negedge rst_n)

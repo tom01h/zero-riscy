@@ -117,9 +117,6 @@ module zeroriscy_id_stage
     output logic        data_load_event_ex_o,
     output logic [31:0] data_wdata_ex_o,
 
-    input  logic        data_misaligned_i,
-    input  logic [31:0] misaligned_addr_i,
-
     // Interrupt signals
     input  logic        irq_i,
     input  logic [4:0]  irq_id_i,
@@ -260,9 +257,6 @@ module zeroriscy_id_stage
   logic [1:0]  csr_op;
   logic        csr_status;
 
-  // Forwarding
-  logic [1:0]  operand_a_fw_mux_sel;
-
   logic [31:0] operand_a_fw_id;
   logic [31:0] operand_b_fw_id;
 
@@ -341,16 +335,7 @@ module zeroriscy_id_stage
       endcase
     end
 
- // Operand a forwarding mux used with LSU instructions
- always_comb
-   begin : operand_a_fw_mux
-     case (operand_a_fw_mux_sel)
-       SEL_MISALIGNED:    operand_a_fw_id = misaligned_addr_i;
-       SEL_REGFILE:       operand_a_fw_id = regfile_data_ra_id;
-       default:           operand_a_fw_id = regfile_data_ra_id;
-     endcase; // case (operand_a_fw_mux_sel)
-   end
-
+  assign operand_a_fw_id = regfile_data_ra_id;
 
   //////////////////////////////////////////////////////
   //   ___                                 _   ____   //
@@ -368,7 +353,7 @@ module zeroriscy_id_stage
         IMMB_I:      imm_b = imm_i_type;
         IMMB_S:      imm_b = imm_s_type;
         IMMB_U:      imm_b = imm_u_type;
-        IMMB_PCINCR: imm_b = (is_compressed_i && (~data_misaligned_i)) ? 32'h2 : 32'h4;
+        IMMB_PCINCR: imm_b = (is_compressed_i) ? 32'h2 : 32'h4;
         IMMB_S2:     imm_b = imm_s2_type;
         IMMB_BI:     imm_b = imm_bi_type;
         IMMB_S3:     imm_b = imm_s3_type;
@@ -470,7 +455,6 @@ module zeroriscy_id_stage
   (
     // controller related signals
     .deassert_we_i                   ( deassert_we               ),
-    .data_misaligned_i               ( data_misaligned_i         ),
     .branch_mux_i                    ( branch_mux_dec            ),
     .jump_mux_i                      ( jump_mux_dec              ),
 
@@ -561,9 +545,6 @@ module zeroriscy_id_stage
     .exc_pc_mux_o                   ( exc_pc_mux_o           ),
     .exc_cause_o                    ( exc_cause_o            ),
 
-    // LSU
-    .data_misaligned_i              ( data_misaligned_i      ),
-
     // jump/branch control
     .branch_in_id_i                 ( branch_in_id           ),
     .branch_taken_ex_i              ( branch_taken_ex        ),
@@ -598,9 +579,6 @@ module zeroriscy_id_stage
     .dbg_jump_req_i                 ( dbg_jump_req_i         ),
     .dbg_settings_i                 ( dbg_settings_i         ),
     .dbg_trap_o                     ( dbg_trap_o             ),
-
-    // Forwarding signals
-    .operand_a_fw_mux_sel_o         ( operand_a_fw_mux_sel   ),
 
     // Stall signals
     .halt_if_o                      ( halt_if_o              ),
@@ -812,11 +790,6 @@ module zeroriscy_id_stage
   // make sure that branch decision is valid when jumping
   assert property (
     @(posedge clk) (branch_decision_i !== 1'bx || branch_in_id == 1'b0) ) else begin $display("Branch decision is X"); $stop; end
-
-`ifdef CHECK_MISALIGNED
-  assert property (
-    @(posedge clk) (~data_misaligned_i) ) else $display("Misaligned memory access at %x",pc_id_i);
-`endif
 
   // the instruction delivered to the ID stage should always be valid
   assert property (

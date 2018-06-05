@@ -115,9 +115,6 @@ module zeroriscy_core
   // ID performance counter signals
   logic        is_decoding;
 
-  logic        data_misaligned;
-  logic [31:0] misaligned_addr;
-
   // Jump and branch target and decision (EX->IF)
   logic [31:0] jump_target_ex;
   logic        branch_in_ex;
@@ -169,7 +166,6 @@ module zeroriscy_core
   logic        data_req_ex;
   logic [31:0] data_wdata_ex;
   logic        data_load_event_ex;
-  logic        data_misaligned_ex;
   logic [31:0] regfile_wdata_lsu;
 
   // stall control
@@ -432,9 +428,6 @@ module zeroriscy_core
     .data_load_event_ex_o         ( data_load_event_ex   ), // to load store unit
     .data_wdata_ex_o              ( data_wdata_ex        ), // to load store unit
 
-    .data_misaligned_i            ( data_misaligned      ),
-    .misaligned_addr_i            ( misaligned_addr      ),
-
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
     .irq_id_i                     ( irq_id_i             ),
@@ -555,16 +548,12 @@ module zeroriscy_core
 
     .adder_result_ex_i     ( alu_adder_result_ex),
 
-    .data_misaligned_o     ( data_misaligned    ),
-    .misaligned_addr_o     ( misaligned_addr    ),
-
     // exception signals
     .load_err_o            ( lsu_load_err       ),
     .store_err_o           ( lsu_store_err      ),
 
     // control signals
     .data_valid_o          ( data_valid_lsu     ),
-    .lsu_update_addr_o     (                    ),
     .busy_o                ( lsu_busy           )
   );
 

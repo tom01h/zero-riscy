@@ -37,7 +37,6 @@ module zeroriscy_decoder
 (
   // singals running to/from controller
   input  logic        deassert_we_i,           // deassert we, we are stalled or not active
-  input  logic        data_misaligned_i,       // misaligned data load/store in progress
   input  logic        branch_mux_i,
   input  logic        jump_mux_i,
   output logic        illegal_insn_o,          // illegal instruction encountered
@@ -633,23 +632,6 @@ module zeroriscy_decoder
     // make sure invalid compressed instruction causes an exception
     if (illegal_c_insn_i) begin
       illegal_insn_o = 1'b1;
-    end
-
-    // misaligned access was detected by the LSU
-    // TODO: this section should eventually be moved out of the decoder
-    if (data_misaligned_i == 1'b1)
-    begin
-      // only part of the pipeline is unstalled, make sure that the
-      // correct operands are sent to the AGU
-      alu_op_a_mux_sel_o  = OP_A_REGA_OR_FWD;
-      alu_op_b_mux_sel_o  = OP_B_IMM;
-      imm_b_mux_sel_o     = IMMB_PCINCR;
-
-      // if prepost increments are used, we do not write back the
-      // second address since the first calculated address was
-      // the correct one
-      regfile_we = 1'b0;
-
     end
   end
 
