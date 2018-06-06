@@ -70,7 +70,6 @@ module zeroriscy_tracer
   input  logic [(REG_ADDR_WIDTH-1):0] ex_reg_addr,
   input  logic        ex_reg_we,
   input  logic [31:0] ex_reg_wdata,
-  input  logic        data_valid_lsu,
   input  logic        ex_data_req,
   input  logic        ex_data_gnt,
   input  logic        ex_data_we,
@@ -253,7 +252,7 @@ module zeroriscy_tracer
           end
         endcase
 
-        regs_write.push_back('{rd, 'x});
+        //regs_write.push_back('{rd, 'x});
 
         if (instr[14:12] != 3'b111) begin
           // regular load
@@ -332,7 +331,7 @@ module zeroriscy_tracer
     instr_trace_t trace;
     mem_acc_t     mem_acc;
     // special case for WFI because we don't wait for unstalling there
-    if ( (id_valid || mret_insn || ecall_insn || pipe_flush || ebrk_insn || csr_status || ex_data_req) && is_decoding)
+    if ( (id_valid || mret_insn || ecall_insn || pipe_flush || ebrk_insn || csr_status) && is_decoding)
     begin
       trace = new ();
 
@@ -399,8 +398,8 @@ module zeroriscy_tracer
         INSTR_DIVU:       trace.printRInstr("divu");
         INSTR_REM:        trace.printRInstr("rem");
         INSTR_REMU:       trace.printRInstr("remu");
-        {25'b?, OPCODE_LOAD}:       trace.printLoadInstr();
-        {25'b?, OPCODE_STORE}:      trace.printStoreInstr();
+        {25'b?, OPCODE_LOAD}:   if(ex_data_gnt)    trace.printLoadInstr();
+        {25'b?, OPCODE_STORE}:  if(ex_data_gnt)    trace.printStoreInstr();
         // RV32Xbnn
         INSTR_INI:        trace.printRInstr("bnn_ini");
         INSTR_ACC:        trace.printRInstr("bnn_acc");
@@ -434,14 +433,7 @@ module zeroriscy_tracer
             mem_acc.wdata = ex_data_wdata;
           else
             mem_acc.wdata = 'x;
-          //we wait until the the data instruction ends
-          do @(negedge clk);
-          while (!data_valid_lsu);
 
-          if (~mem_acc.we)
-            //load operations
-            foreach(trace.regs_write[i])
-                trace.regs_write[i].value = lsu_reg_wdata;
           trace.mem_access.push_back(mem_acc);
         end
      trace.printInstrTrace();

@@ -70,7 +70,6 @@ module zeroriscy_tracer
     input logic [(REG_ADDR_WIDTH-1):0] ex_reg_addr,
     input logic                        ex_reg_we,
     input logic [31:0]                 ex_reg_wdata,
-    input logic                        data_valid_lsu,
     input logic                        ex_data_req,
     input logic                        ex_data_gnt,
     input logic                        ex_data_we,
@@ -285,8 +284,8 @@ module zeroriscy_tracer
              end
          endcase
 
-         reg_rd.addr = rd;
-         reg_rd.value = lsu_reg_wdata;
+         //reg_rd.addr = rd;
+         //reg_rd.value = lsu_reg_wdata;
 
          if (instr[14:12] != 3'b111) begin
             // regular load
@@ -333,7 +332,7 @@ module zeroriscy_tracer
    always @(negedge clk)
      begin
         // special case for WFI because we don't wait for unstalling there
-        if ( (id_valid || mret_insn || ecall_insn || pipe_flush || ebrk_insn || csr_status || ex_data_req) && is_decoding)
+        if ( (id_valid || mret_insn || ecall_insn || pipe_flush || ebrk_insn || csr_status) && is_decoding)
           begin
              reg_rs1.addr=0;
              reg_rs2.addr=0;
@@ -400,8 +399,8 @@ module zeroriscy_tracer
                INSTR_DIVU:       printRInstr("divu            ");
                INSTR_REM:        printRInstr("rem             ");
                INSTR_REMU:       printRInstr("remu            ");
-               {25'b?, OPCODE_LOAD}:  printLoadInstr();
-               {25'b?, OPCODE_STORE}: printStoreInstr();
+               {25'b?, OPCODE_LOAD}:  if(ex_data_gnt) printLoadInstr();
+               {25'b?, OPCODE_STORE}: if(ex_data_gnt) printStoreInstr();
                // RV32Xbnn
                INSTR_INI:        printRInstr("bnn_ini         ");
                INSTR_ACC:        printRInstr("bnn_acc         ");
@@ -414,8 +413,8 @@ module zeroriscy_tracer
                default:          printMnemonic("INVALID                             ");
              endcase // unique case (instr)
 
-             if(~ex_data_req|data_valid_lsu)
-               printInstrTrace(f, cycles, pc, instr, str);
+             //if(~ex_data_req|data_valid_lsu)
+             printInstrTrace(f, cycles, pc, instr, str);
 
           end
      end // always @ (posedge clk)

@@ -61,8 +61,8 @@ module zeroriscy_load_store_unit
     output logic         store_err_o,
 
     // stall signal
-    output logic         data_valid_o,
-
+    output logic         lsu_ready_ex_o,       // release from gnt wait
+    output logic         lsu_stall_o,          // wait rvalid
     output logic         busy_o
 );
 
@@ -228,7 +228,16 @@ module zeroriscy_load_store_unit
   end
 
   // output to register file
-  assign data_rdata_ex_o = data_rdata_ext;
+  logic [31:0] rdata_q;
+  always_ff @(posedge clk, negedge rst_n)
+  begin
+    if(rst_n == 1'b0)
+      rdata_q <= 32'h0;
+    else if(data_rvalid_i)
+      rdata_q <= data_rdata_ext;
+  end
+
+  assign data_rdata_ex_o = (data_rvalid_i == 1'b1) ? data_rdata_ext : rdata_q;
 
   // output to data interface
   assign data_addr_o   = data_addr_int;
@@ -244,7 +253,7 @@ module zeroriscy_load_store_unit
   begin
     NS             = CS;
     data_req_o     = 1'b0;
-    data_valid_o   = 1'b0;
+    lsu_ready_ex_o = 1'b0;
 
     case(CS)
       // starts from not active and stays in IDLE until request was granted
@@ -265,14 +274,22 @@ module zeroriscy_load_store_unit
         data_req_o        = 1'b1;
         if(data_gnt_i) begin
           NS = WAIT_RVALID;
+          lsu_ready_ex_o = 1'b1;
         end
       end //~ WAIT_GNT
 
       WAIT_RVALID:
       begin
         if(data_rvalid_i) begin
-          data_valid_o = 1'b1;
-          NS           = IDLE;
+          if (data_req_ex_i) begin
+            data_req_o     = data_req_ex_i;
+            if(data_gnt_i)
+              NS = WAIT_RVALID;
+            else
+              NS = WAIT_GNT;
+          end else begin
+            NS = IDLE;
+          end
         end
       end //~ WAIT_RVALID
 
@@ -283,5 +300,6 @@ module zeroriscy_load_store_unit
   end
 
   assign busy_o = (CS == WAIT_RVALID) || (data_req_o == 1'b1);
+  assign lsu_stall_o = (CS == WAIT_RVALID) & ~data_rvalid_i;
 
 endmodule

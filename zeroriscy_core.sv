@@ -172,13 +172,13 @@ module zeroriscy_core
   logic        halt_if;
   logic        id_ready;
   logic        ex_ready;
+  logic        lsu_stall;
 
   logic        if_valid;
   logic        id_valid;
   logic        wb_valid;
 
   logic        lsu_ready_ex;
-  logic        data_valid_lsu;
 
   // Signals between instruction core interface and pipe (if and id stages)
   logic        instr_req_int;    // Id stage asserts a req to instruction core interface
@@ -386,11 +386,12 @@ module zeroriscy_core
     .pc_id_i                      ( pc_id                ),
 
     // Stalls
+    .data_gnt_i                   ( data_gnt_i           ),
     .halt_if_o                    ( halt_if              ),
 
     .id_ready_o                   ( id_ready             ),
     .ex_ready_i                   ( ex_ready             ),
-
+    .lsu_stall_i                  ( lsu_stall            ),
     .id_valid_o                   ( id_valid             ),
 
     .alu_operator_ex_o            ( alu_operator_ex      ),
@@ -506,7 +507,7 @@ module zeroriscy_core
     .branch_decision_o          ( branch_decision       ),
 
     .lsu_en_i                   ( data_req_ex           ),
-    .lsu_ready_ex_i             ( data_valid_lsu        ),
+    .lsu_ready_ex_i             ( lsu_ready_ex          ),
     .ex_ready_o                 ( ex_ready              )
   );
 
@@ -553,7 +554,8 @@ module zeroriscy_core
     .store_err_o           ( lsu_store_err      ),
 
     // control signals
-    .data_valid_o          ( data_valid_lsu     ),
+    .lsu_ready_ex_o        ( lsu_ready_ex       ),
+    .lsu_stall_o           ( lsu_stall          ),
     .busy_o                ( lsu_busy           )
   );
 
@@ -725,7 +727,6 @@ module zeroriscy_core
     .ex_reg_addr    ( id_stage_i.regfile_waddr_mux         ),
     .ex_reg_we      ( id_stage_i.regfile_we_mux            ),
     .ex_reg_wdata   ( id_stage_i.regfile_wdata_mux         ),
-    .data_valid_lsu ( data_valid_lsu                       ),
     .ex_data_addr   ( data_addr_o                          ),
     .ex_data_req    ( data_req_o                           ),
     .ex_data_gnt    ( data_gnt_i                           ),
