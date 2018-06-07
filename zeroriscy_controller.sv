@@ -107,6 +107,7 @@ module zeroriscy_controller
   output logic        halt_id_o,
 
   input  logic        id_ready_i,                 // ID stage is ready
+  input  logic        wb_stall_i,                 // WB stage stall
 
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
@@ -500,6 +501,10 @@ module zeroriscy_controller
 
     // deassert WE in case of illegal instruction
     if (illegal_insn_i)
+      deassert_we_o = 1'b1;
+
+    // deassert WE when WB stage stall
+    if (wb_stall_i)
       deassert_we_o = 1'b1;
   end
 

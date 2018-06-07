@@ -183,7 +183,6 @@ module zeroriscy_id_stage
 
   logic        instr_multicyle;
   logic        wb_stall;
-  logic        id_stall;
   logic        raw_stall;
   logic        load_stall;
   logic        multdiv_stall;
@@ -193,6 +192,8 @@ module zeroriscy_id_stage
 
   logic        halt_id;
   //FSM signals to write back multi cycles instructions
+  logic        raw_ra;
+  logic        raw_rb;
   logic        regfile_we;
   enum logic {RF_LSU, RF_EX} select_data_rf;
 
@@ -309,7 +310,7 @@ module zeroriscy_id_stage
   // signal to 0 for instructions that are done
   assign clear_instr_valid_o = id_ready_o | halt_id;
 
-  assign branch_taken_ex = branch_in_id & branch_decision_i & ~id_stall;
+  assign branch_taken_ex = branch_in_id & branch_decision_i;
 
   ////////////////////////////////////////////////////////
   //   ___                                 _      _     //
@@ -397,11 +398,6 @@ module zeroriscy_id_stage
   logic  [4:0] regfile_waddr_mux;
   logic  [4:0] regfile_waddr_wb;
 
-  assign raw_stall = (regfile_waddr_wb!=32'h0)&
-                     ((regfile_waddr_wb==regfile_addr_ra_id)&(alu_op_a_mux_sel==OP_A_REGA_OR_FWD)|
-                      (regfile_waddr_wb==regfile_addr_rb_id)&(alu_op_b_mux_sel==OP_B_REGB_OR_FWD)|
-                      (regfile_waddr_wb==regfile_addr_rb_id)&(data_we_id&data_req_id));
-
   //TODO: add assertion
   // Register File mux
   always_comb
@@ -410,7 +406,7 @@ module zeroriscy_id_stage
       regfile_wdata_mux   = dbg_reg_wdata_i;
       regfile_waddr_mux   = dbg_reg_waddr_i;
       regfile_we_mux      = 1'b1;
-    end else if (regfile_we&~id_stall) begin
+    end else if (regfile_we & (regfile_alu_waddr_id!=5'h0)) begin
       regfile_we_mux      = 1'b1;
       regfile_waddr_mux   = regfile_alu_waddr_id;
       if (csr_access)
@@ -418,7 +414,7 @@ module zeroriscy_id_stage
       else
         regfile_wdata_mux = regfile_wdata_ex_i;
     end else begin
-      regfile_we_mux      =(regfile_waddr_wb!=32'h0) & ~lsu_stall_i;
+      regfile_we_mux      =(regfile_waddr_wb!=5'h0) & ~lsu_stall_i;
       regfile_waddr_mux   = regfile_waddr_wb;
       regfile_wdata_mux   = regfile_wdata_lsu_i;
     end
@@ -427,18 +423,17 @@ module zeroriscy_id_stage
   always_ff @(posedge clk, negedge rst_n)
   begin : WB_Register_Address
     if (~rst_n)
-    begin
-      regfile_waddr_wb <= 32'h0;
-    end
-    else if (data_req_id&regfile_we_id&id_ready_o) begin
+      regfile_waddr_wb <= 5'h0;
+    else if (data_req_id&regfile_we_id&id_ready_o)
       regfile_waddr_wb <= regfile_alu_waddr_id;
-    end
-    else if (~(regfile_we&~id_stall) & ~lsu_stall_i) begin
-      regfile_waddr_wb <= 32'h0;
-    end
-    else if (regfile_waddr_wb==regfile_alu_waddr_id)//&(regfile_we&~id_stall)
-      regfile_waddr_wb <= 32'h0;
+    else if (~(regfile_we&(regfile_alu_waddr_id!=5'h0)) & ~lsu_stall_i)
+      regfile_waddr_wb <= 5'h0;
+    else if (regfile_we & (regfile_waddr_wb==regfile_alu_waddr_id))
+      regfile_waddr_wb <= 5'h0;
   end
+
+  assign raw_ra = (regfile_waddr_wb!=5'h0) & (regfile_waddr_wb==regfile_addr_ra_id);
+  assign raw_rb = (regfile_waddr_wb!=5'h0) & (regfile_waddr_wb==regfile_addr_rb_id);
 
   zeroriscy_register_file
   #(
@@ -496,6 +491,9 @@ module zeroriscy_id_stage
     // from IF/ID pipeline
     .instr_rdata_i                   ( instr                     ),
     .illegal_c_insn_i                ( illegal_c_insn_i          ),
+    .raw_ra_i                        ( raw_ra                    ),
+    .raw_rb_i                        ( raw_rb                    ),
+    .raw_stall_o                     ( raw_stall                 ),
 
     // ALU signals
     .alu_operator_o                  ( alu_operator              ),
@@ -614,6 +612,7 @@ module zeroriscy_id_stage
     .halt_id_o                      ( halt_id                ),
 
     .id_ready_i                     ( id_ready_o             ),
+    .wb_stall_i                     ( wb_stall               ),
 
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),
@@ -662,7 +661,7 @@ module zeroriscy_id_stage
   assign data_type_ex_o              = data_type_id;
   assign data_sign_ext_ex_o          = data_sign_ext_id;
   assign data_wdata_ex_o             = regfile_data_rb_id;
-  assign data_req_ex_o               = data_req_id       & ~id_stall;
+  assign data_req_ex_o               = data_req_id;
   assign data_reg_offset_ex_o        = data_reg_offset_id;
   assign data_load_event_ex_o        = data_load_event_id;
 
@@ -670,20 +669,20 @@ module zeroriscy_id_stage
   assign alu_operand_a_ex_o          = alu_operand_a;
   assign alu_operand_b_ex_o          = alu_operand_b;
 
-  assign csr_access_ex_o             = csr_access        & ~id_stall;
+  assign csr_access_ex_o             = csr_access;
   assign csr_op_ex_o                 = csr_op;
 
   assign branch_in_ex_o              = branch_in_id;
 
-  assign mult_en_ex_o                = mult_int_en       & ~id_stall;
-  assign div_en_ex_o                 = div_int_en        & ~id_stall;
+  assign mult_en_ex_o                = mult_int_en;
+  assign div_en_ex_o                 = div_int_en;
 
   assign multdiv_operator_ex_o       = multdiv_operator;
   assign multdiv_signed_mode_ex_o    = multdiv_signed_mode;
   assign multdiv_operand_a_ex_o      = regfile_data_ra_id;
   assign multdiv_operand_b_ex_o      = regfile_data_rb_id;
 
-  assign bnn_en_ex_o                 = bnn_en            & ~id_stall;
+  assign bnn_en_ex_o                 = bnn_en;
   assign bnn_operand_addr_ex_o       = alu_operand_a;
   assign bnn_operand_data_ex_o       = alu_operand_b;
 
@@ -735,51 +734,50 @@ module zeroriscy_id_stage
       begin
         jump_mux_dec   = 1'b1;
         branch_mux_dec = 1'b1;
-        if(~id_stall)
-          unique case (1'b1)
-            data_req_id: begin
-               //LSU operation
-               regfile_we      = 1'b0;
-               if(~data_gnt_i)begin
-                  id_wb_fsm_ns    = WAIT_MULTICYCLE;
-                  load_stall      = 1'b1;
-                  instr_multicyle = 1'b1;
-               end
-            end
-            branch_in_id: begin
-               //Cond Branch operation
-               id_wb_fsm_ns    = branch_decision_i ? WAIT_MULTICYCLE : IDLE;
-               branch_stall    = branch_decision_i;
-               instr_multicyle = branch_decision_i;
-               branch_set_n    = branch_decision_i;
-               perf_branch_o   = 1'b1;
-            end
-            multdiv_int_en: begin
-               //MUL or DIV operation
-               regfile_we      = 1'b0;
+        unique case (1'b1)
+          data_req_id: begin
+            //LSU operation
+            regfile_we      = 1'b0;
+            if(~data_gnt_i)begin
                id_wb_fsm_ns    = WAIT_MULTICYCLE;
-               multdiv_stall   = 1'b1;
+               load_stall      = 1'b1;
                instr_multicyle = 1'b1;
             end
-            bnn_en: begin
-               //BNN operation
-               regfile_we      = 1'b0;
-               if((bnn_operator==3'b100)|(bnn_operator==3'b101))begin
-                  id_wb_fsm_ns    = WAIT_MULTICYCLE;
-                  bnn_stall       = 1'b1;
-                  instr_multicyle = 1'b1;
-               end
-            end
-            jump_in_id: begin
-               //UnCond Branch operation
-               regfile_we      = 1'b0;
+          end
+          branch_in_id: begin
+            //Cond Branch operation
+            id_wb_fsm_ns    = branch_decision_i ? WAIT_MULTICYCLE : IDLE;
+            branch_stall    = branch_decision_i;
+            instr_multicyle = branch_decision_i;
+            branch_set_n    = branch_decision_i;
+            perf_branch_o   = 1'b1;
+          end
+          multdiv_int_en: begin
+            //MUL or DIV operation
+            regfile_we      = 1'b0;
+            id_wb_fsm_ns    = WAIT_MULTICYCLE;
+            multdiv_stall   = 1'b1;
+            instr_multicyle = 1'b1;
+          end
+          bnn_en: begin
+            //BNN operation
+            regfile_we      = 1'b0;
+            if((bnn_operator==3'b100)|(bnn_operator==3'b101))begin
                id_wb_fsm_ns    = WAIT_MULTICYCLE;
-               jump_stall      = 1'b1;
+               bnn_stall       = 1'b1;
                instr_multicyle = 1'b1;
-               jump_set        = 1'b1;
             end
-            default:;
-          endcase
+          end
+          jump_in_id: begin
+            //UnCond Branch operation
+            regfile_we      = 1'b0;
+            id_wb_fsm_ns    = WAIT_MULTICYCLE;
+            jump_stall      = 1'b1;
+            instr_multicyle = 1'b1;
+            jump_set        = 1'b1;
+          end
+          default:;
+        endcase
       end
 
       WAIT_MULTICYCLE:
@@ -810,8 +808,7 @@ module zeroriscy_id_stage
   end
 
   // stall control
-  assign id_stall   = raw_stall | wb_stall;
-  assign id_ready_o = (~load_stall) & (~branch_stall) & (~jump_stall) & (~multdiv_stall) & (~bnn_stall) & (~id_stall);
+  assign id_ready_o = (~load_stall) & (~branch_stall) & (~jump_stall) & (~multdiv_stall) & (~bnn_stall) & (~wb_stall) & (~raw_stall);
   assign id_valid_o = (~halt_id) & id_ready_o;
   assign wb_stall   = lsu_stall_i;
 

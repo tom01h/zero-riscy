@@ -48,6 +48,9 @@ module zeroriscy_decoder
   // from IF/ID pipeline
   input  logic [31:0] instr_rdata_i,           // instruction read from instr memory/cache
   input  logic        illegal_c_insn_i,        // compressed instruction decode failed
+  input  logic        raw_ra_i,                // RA==WB Wreg
+  input  logic        raw_rb_i,                // RB==WB Wreg
+  output logic        raw_stall_o,
 
   // ALU signals
   output logic [ALU_OP_WIDTH-1:0] alu_operator_o, // ALU operation selection
@@ -96,6 +99,7 @@ module zeroriscy_decoder
 
   logic       mult_int_en;
   logic       div_int_en;
+  logic       bnn_en;
   logic       branch_in_id;
   logic       jump_in_id;
 
@@ -127,7 +131,7 @@ module zeroriscy_decoder
     multdiv_operator_o          = MD_OP_MULL;
     multdiv_signed_mode_o       = 2'b00;
 
-     bnn_en_o                   = 1'b0;
+     bnn_en                     = 1'b0;
      bnn_operator_o             = 3'b000;
      bnn_param_o                = 7'b0000000;
 
@@ -585,38 +589,38 @@ module zeroriscy_decoder
       OPCODE_BNN: begin  // BNN operation
          unique case (instr_rdata_i[14:12])
            3'b000:begin // Ini
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b000;
            end
            3'b001:begin // Acc
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b001;
            end
            3'b010:begin // Pool
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b010;
            end
            3'b011:begin // Norm
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b011;
            end
            3'b100:begin // Activ
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b100;
               regfile_we = 1'b1;
            end
            3'b101:begin // Acc8
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b101;
               bnn_param_o = instr_rdata_i[31:25];
               regfile_we = 1'b1;
            end
            3'b110:begin // Set
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b110;
            end
            3'b111:begin // Norm8
-              bnn_en_o = 1'b1;
+              bnn_en = 1'b1;
               bnn_operator_o = 3'b111;
            end
            default: begin
@@ -635,18 +639,20 @@ module zeroriscy_decoder
     end
   end
 
+  assign raw_stall_o = (raw_ra_i & (alu_op_a_mux_sel_o==OP_A_REGA_OR_FWD)|
+                        raw_rb_i & (alu_op_b_mux_sel_o==OP_B_REGB_OR_FWD)|
+                        raw_rb_i & (data_we_o&data_req)                  );
 
-
-
-
+  wire deassert_we = deassert_we_i | raw_stall_o;
 
   // deassert we signals (in case of stalls)
-  assign regfile_we_o      = (deassert_we_i) ? 1'b0          : regfile_we;
-  assign mult_int_en_o     = RV32M ? ((deassert_we_i) ? 1'b0 : mult_int_en) : 1'b0;
-  assign div_int_en_o      = RV32M ? ((deassert_we_i) ? 1'b0 : div_int_en ) : 1'b0;
-  assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
-  assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE   : csr_op;
-  assign jump_in_id_o      = (deassert_we_i) ? 1'b0          : jump_in_id;
-  assign branch_in_id_o    = (deassert_we_i) ? 1'b0          : branch_in_id;
+  assign regfile_we_o      = (deassert_we) ? 1'b0          : regfile_we;
+  assign mult_int_en_o     = RV32M ? ((deassert_we) ? 1'b0 : mult_int_en) : 1'b0;
+  assign div_int_en_o      = RV32M ? ((deassert_we) ? 1'b0 : div_int_en ) : 1'b0;
+  assign bnn_en_o          = (deassert_we) ? 1'b0          : bnn_en;
+  assign data_req_o        = (deassert_we) ? 1'b0          : data_req;
+  assign csr_op_o          = (deassert_we) ? CSR_OP_NONE   : csr_op;
+  assign jump_in_id_o      = (deassert_we) ? 1'b0          : jump_in_id;
+  assign branch_in_id_o    = (deassert_we) ? 1'b0          : branch_in_id;
 
 endmodule // controller
