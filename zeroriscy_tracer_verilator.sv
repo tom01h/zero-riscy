@@ -76,6 +76,7 @@ module zeroriscy_tracer
     input logic [31:0]                 ex_data_addr,
     input logic [31:0]                 ex_data_wdata,
 
+    input logic [4:0]                  lsu_reg_waddr,
     input logic [31:0]                 lsu_reg_wdata,
 
     input logic [31:0]                 imm_u_type,
@@ -139,6 +140,17 @@ module zeroriscy_tracer
 
    string       str;
 
+   function void printWbTrace
+     (
+      input integer      f,
+      input integer      cycles
+      );
+      begin
+         $fwrite(f, "%15d                                                         ", cycles);
+         $fwrite(f, " x%02d<%08x\n", lsu_reg_waddr, lsu_reg_wdata);
+      end
+   endfunction
+
    function void printInstrTrace
      (
       input integer      f,
@@ -156,6 +168,8 @@ module zeroriscy_tracer
 
          if (reg_rd.addr != 0)
            $fwrite(f, " x%02d=%08x", reg_rd.addr, reg_rd.value);
+         else if(lsu_reg_waddr != 0)
+           $fwrite(f, " x%02d<%08x", lsu_reg_waddr, lsu_reg_wdata);
          else
            $fwrite(f, "             ");
          if (reg_rs1.addr != 0)
@@ -213,7 +227,7 @@ module zeroriscy_tracer
          reg_rd.value = ex_reg_wdata;
          reg_rs1.addr = rs1;
          reg_rs1.value = rs1_value;
-         str = $sformatf("%16s x%02h, x%02h, 0x%07h", mnemonic, rd, rs1, imm_i_type[27:0]);
+         str = $sformatf("%16s x%02d, x%02d, 0x%07h", mnemonic, rd, rs1, imm_i_type[27:0]);
       end
    endfunction
 
@@ -416,6 +430,8 @@ module zeroriscy_tracer
              //if(~ex_data_req|data_valid_lsu)
              printInstrTrace(f, cycles, pc, instr, str);
 
+          end else if (lsu_reg_waddr != 0) begin
+             printWbTrace(f, cycles);
           end
      end // always @ (posedge clk)
 

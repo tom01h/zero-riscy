@@ -76,6 +76,7 @@ module zeroriscy_tracer
   input  logic [31:0] ex_data_addr,
   input  logic [31:0] ex_data_wdata,
 
+  input  logic [4:0]  lsu_reg_waddr,
   input  logic [31:0] lsu_reg_wdata,
 
   input  logic [31:0] imm_u_type,
@@ -131,8 +132,16 @@ module zeroriscy_tracer
       end
     endfunction
 
+    function void printWbTrace();
+      begin
+        $fwrite(f, "%t %15d %-54s", simtime, cycles, "");
+        $fwrite(f, " %s<%08x\n", regAddrToStr(lsu_reg_waddr), lsu_reg_wdata);
+      end
+    endfunction
+
     function void printInstrTrace();
       mem_acc_t mem_acc;
+      logic wb;
       begin
         $fwrite(f, "%t %15d %h %h %-36s", simtime,
                                           cycles,
@@ -140,10 +149,16 @@ module zeroriscy_tracer
                                           instr,
                                           str);
 
+        wb=0;
         foreach(regs_write[i]) begin
-          if (regs_write[i].addr != 0)
+          if (regs_write[i].addr != 0)begin
             $fwrite(f, " %s=%08x", regAddrToStr(regs_write[i].addr), regs_write[i].value);
+            wb=1;
+          end
         end
+
+        if ((wb==0)&(lsu_reg_waddr != 0))
+           $fwrite(f, " %s<%08x", regAddrToStr(lsu_reg_waddr), lsu_reg_wdata);
 
         foreach(regs_read[i]) begin
           if (regs_read[i].addr != 0)
@@ -438,6 +453,10 @@ module zeroriscy_tracer
         end
      trace.printInstrTrace();
 
+    end else if (lsu_reg_waddr != 0) begin
+      trace.simtime    = $time;
+      trace.cycles     = cycles;
+      trace.printWbTrace();
     end
   end // always @ (posedge clk)
 

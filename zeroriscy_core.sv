@@ -734,6 +734,7 @@ module zeroriscy_core
 
     .ex_data_wdata  ( data_wdata_o                         ),
 
+    .lsu_reg_waddr  ( (lsu_stall)?0:id_stage_i.regfile_waddr_wb ),
     .lsu_reg_wdata  ( regfile_wdata_lsu                    ),
 
     .imm_u_type     ( id_stage_i.imm_u_type                ),
