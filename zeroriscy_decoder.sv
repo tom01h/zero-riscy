@@ -66,10 +66,10 @@ module zeroriscy_decoder
   output logic [1:0]  multdiv_operator_o,
   output logic [1:0]  multdiv_signed_mode_o,
 
-  // BNN related control signals
-  output logic        bnn_en_o,               // perform BNN
-  output logic [2:0]  bnn_operator_o,
-  output logic [6:0]  bnn_param_o,
+  // MMULT related control signals
+  output logic        mmult_en_o,             // perform MMULT
+  output logic [2:0]  mmult_operator_o,
+  output logic [6:0]  mmult_param_o,
 
   // register file related signals
   output logic        regfile_we_o,            // write enable for regfile
@@ -99,7 +99,7 @@ module zeroriscy_decoder
 
   logic       mult_int_en;
   logic       div_int_en;
-  logic       bnn_en;
+  logic       mmult_en;
   logic       branch_in_id;
   logic       jump_in_id;
 
@@ -131,9 +131,9 @@ module zeroriscy_decoder
     multdiv_operator_o          = MD_OP_MULL;
     multdiv_signed_mode_o       = 2'b00;
 
-     bnn_en                     = 1'b0;
-     bnn_operator_o             = 3'b000;
-     bnn_param_o                = 7'b0000000;
+    mmult_en                    = 1'b0;
+    mmult_operator_o            = 3'b000;
+    mmult_param_o               = 7'b0000000;
 
     regfile_we                  = 1'b0;
 
@@ -577,51 +577,21 @@ module zeroriscy_decoder
          endcase
       end
 
-
-      //////////////////////////
-      //   ____  _   _ _   _  //
-      //  | __ )| \ | | \ | | //
-      //  |  _ \|  \| |  \| | //
-      //  | |_) | |\  | |\  | //
-      //  |____/|_| \_|_| \_| //
-      //                      //
-      //////////////////////////
-      OPCODE_BNN: begin  // BNN operation
+      //////////////////////////////////////
+      //   __  __ __  __ _   _ _   _____  //
+      //  |  \/  |  \/  | | | | | |_   _| //
+      //  | |\/| | |\/| | | | | |   | |   //
+      //  | |  | | |  | | |_| | |___| |   //
+      //  |_|  |_|_|  |_|\___/|_____|_|   //
+      //                                  //
+      //////////////////////////////////////
+      OPCODE_MMULT: begin  // MMULT operation
          unique case (instr_rdata_i[14:12])
-           3'b000:begin // Ini
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b000;
-           end
-           3'b001:begin // Acc
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b001;
-           end
-           3'b010:begin // Pool
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b010;
-           end
-           3'b011:begin // Norm
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b011;
-           end
-           3'b100:begin // Activ
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b100;
+           3'b101:begin // mmult32
+              mmult_en = 1'b1;
+              mmult_operator_o = 3'b101;
+              mmult_param_o = instr_rdata_i[31:25];
               regfile_we = 1'b1;
-           end
-           3'b101:begin // Acc8
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b101;
-              bnn_param_o = instr_rdata_i[31:25];
-              regfile_we = 1'b1;
-           end
-           3'b110:begin // Set
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b110;
-           end
-           3'b111:begin // Norm8
-              bnn_en = 1'b1;
-              bnn_operator_o = 3'b111;
            end
            default: begin
               illegal_insn_o = 1'b1;
@@ -649,7 +619,7 @@ module zeroriscy_decoder
   assign regfile_we_o      = (deassert_we) ? 1'b0          : regfile_we;
   assign mult_int_en_o     = RV32M ? ((deassert_we) ? 1'b0 : mult_int_en) : 1'b0;
   assign div_int_en_o      = RV32M ? ((deassert_we) ? 1'b0 : div_int_en ) : 1'b0;
-  assign bnn_en_o          = (deassert_we) ? 1'b0          : bnn_en;
+  assign mmult_en_o        = (deassert_we) ? 1'b0          : mmult_en;
   assign data_req_o        = (deassert_we) ? 1'b0          : data_req;
   assign csr_op_o          = (deassert_we) ? CSR_OP_NONE   : csr_op;
   assign jump_in_id_o      = (deassert_we) ? 1'b0          : jump_in_id;

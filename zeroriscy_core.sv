@@ -140,12 +140,12 @@ module zeroriscy_core
   logic [31:0] multdiv_operand_a_ex;
   logic [31:0] multdiv_operand_b_ex;
 
-  // BNN
-  logic        bnn_en_ex;
-  logic [2:0]  bnn_operator_ex;
-  logic [6:0]  bnn_param_ex;
-  logic [31:0] bnn_operand_addr_ex;
-  logic [31:0] bnn_operand_data_ex;
+  // MMULT
+  logic        mmult_en_ex;
+  logic [2:0]  mmult_operator_ex;
+  logic [6:0]  mmult_param_ex;
+  logic [31:0] mmult_operand_addr_ex;
+  logic [31:0] mmult_operand_data_ex;
 
   // CSR control
   logic        csr_access_ex;
@@ -405,11 +405,11 @@ module zeroriscy_core
     .multdiv_operand_a_ex_o       ( multdiv_operand_a_ex   ),
     .multdiv_operand_b_ex_o       ( multdiv_operand_b_ex   ),
 
-    .bnn_en_ex_o                  ( bnn_en_ex            ),
-    .bnn_operator_ex_o            ( bnn_operator_ex      ),
-    .bnn_param_ex_o               ( bnn_param_ex         ),
-    .bnn_operand_addr_ex_o        ( bnn_operand_addr_ex  ),
-    .bnn_operand_data_ex_o        ( bnn_operand_data_ex  ),
+    .mmult_en_ex_o                ( mmult_en_ex           ),
+    .mmult_operator_ex_o          ( mmult_operator_ex     ),
+    .mmult_param_ex_o             ( mmult_param_ex        ),
+    .mmult_operand_addr_ex_o      ( mmult_operand_addr_ex ),
+    .mmult_operand_data_ex_o      ( mmult_operand_data_ex ),
 
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
@@ -495,12 +495,12 @@ module zeroriscy_core
     .alu_adder_result_ex_o      ( alu_adder_result_ex   ), // from ALU to LSU
     .regfile_wdata_ex_o         ( regfile_wdata_ex      ),
 
-    // BNN
-    .bnn_en_i                   ( bnn_en_ex             ),
-    .bnn_operator_i             ( bnn_operator_ex       ),
-    .bnn_param_i                ( bnn_param_ex          ),
-    .bnn_operand_addr_i         ( bnn_operand_addr_ex   ),
-    .bnn_operand_data_i         ( bnn_operand_data_ex   ),
+    // MMULT
+    .mmult_en_i                 ( mmult_en_ex           ),
+    .mmult_operator_i           ( mmult_operator_ex     ),
+    .mmult_param_i              ( mmult_param_ex        ),
+    .mmult_operand_addr_i       ( mmult_operand_addr_ex ),
+    .mmult_operand_data_i       ( mmult_operand_data_ex ),
 
     // To IF: Jump and branch target and decision
     .jump_target_o              ( jump_target_ex        ),

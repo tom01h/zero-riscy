@@ -415,15 +415,8 @@ module zeroriscy_tracer
                INSTR_REMU:       printRInstr("remu            ");
                {25'b?, OPCODE_LOAD}:  if(ex_data_gnt) printLoadInstr();
                {25'b?, OPCODE_STORE}: if(ex_data_gnt) printStoreInstr();
-               // RV32Xbnn
-               INSTR_INI:        printRInstr("bnn_ini         ");
-               INSTR_ACC:        printRInstr("bnn_acc         ");
-               INSTR_POOL:       printRInstr("bnn_pool        ");
-               INSTR_NORM:       printRInstr("bnn_norm        ");
-               INSTR_ACTIV:      printRInstr("bnn_activ       ");
-               INSTR_ACC8:       printRInstr("bnn_acc8        ");
-               INSTR_SET:        printRInstr("bnn_set         ");
-               INSTR_NORM8:      printRInstr("bnn_norm8       ");
+               // RV32Xmmult
+               INSTR_MMULT32:    printRInstr("mmult32         ");
                default:          printMnemonic("INVALID                             ");
              endcase // unique case (instr)
 

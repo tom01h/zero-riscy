@@ -55,12 +55,12 @@ module zeroriscy_ex_block
   output logic [31:0]             alu_adder_result_ex_o,
   output logic [31:0]             regfile_wdata_ex_o,
 
-  // BNN
-  input logic                     bnn_en_i,
-  input logic [2:0]               bnn_operator_i,
-  input logic [6:0]               bnn_param_i,
-  input logic [31:0]              bnn_operand_addr_i,
-  input logic [31:0]              bnn_operand_data_i,
+  // MMULT
+  input logic                     mmult_en_i,
+  input logic [2:0]               mmult_operator_i,
+  input logic [6:0]               mmult_param_i,
+  input logic [31:0]              mmult_operand_addr_i,
+  input logic [31:0]              mmult_operand_data_i,
 
   // To IF: Jump and branch target and decision
   output logic [31:0]             jump_target_o,
@@ -73,13 +73,13 @@ module zeroriscy_ex_block
   output logic                    ex_ready_o      // EX stage gets new data
 );
 
-  logic [31:0] alu_result, multdiv_result, bnn_result;
+  logic [31:0] alu_result, multdiv_result, mmult_result;
 
   logic        alu_cmp_result;
   logic        multdiv_ready;
   logic        multdiv_en;
 
-  logic        bnn_ready;
+  logic        mmult_ready;
 
 /*
   The multdiv_i output is never selected if RV32M=0
@@ -99,8 +99,8 @@ endgenerate
       unique case (1'b1)
         multdiv_en:
           regfile_wdata_ex_o = multdiv_result;
-        bnn_en_i:
-          regfile_wdata_ex_o = bnn_result;
+        mmult_en_i:
+          regfile_wdata_ex_o = mmult_result;
         default:
           regfile_wdata_ex_o = alu_result;
       endcase
@@ -152,18 +152,18 @@ endgenerate
      .multdiv_result_o   ( multdiv_result        )
     );
 
-  zeroriscy_bnn bnn_i
+  zeroriscy_mmult mmult_i
   (
     .clk                 ( clk                       ),
     .rst_n               ( rst_n                     ),
-    .bnn_en_i            ( bnn_en_i                  ),
-    .bnn_operator_i      ( bnn_operator_i            ),
-    .bnn_param_i         ( bnn_param_i               ),
-    .bnn_addr_i          ( bnn_operand_addr_i        ),
-    .bnn_data_i          ( bnn_operand_data_i        ),
+    .mmult_en_i          ( mmult_en_i                ),
+    .mmult_operator_i    ( mmult_operator_i          ),
+    .mmult_param_i       ( mmult_param_i             ),
+    .mmult_addr_i        ( mmult_operand_addr_i      ),
+    .mmult_data_i        ( mmult_operand_data_i      ),
 
-    .bnn_result_o        ( bnn_result ),
-    .bnn_ready_o         ( bnn_ready )
+    .mmult_result_o      ( mmult_result              ),
+    .mmult_ready_o       ( mmult_ready               )
    );
 
   always_comb
@@ -173,8 +173,8 @@ endgenerate
           ex_ready_o = multdiv_ready;
         lsu_en_i:
           ex_ready_o = lsu_ready_ex_i;
-        bnn_en_i:
-          ex_ready_o = bnn_ready;
+        mmult_en_i:
+          ex_ready_o = mmult_ready;
         default:
           //1 Cycle case
           ex_ready_o = 1'b1;

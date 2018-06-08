@@ -11,47 +11,50 @@
 
 import zeroriscy_defines::*;
 
-module zeroriscy_bnn
+module zeroriscy_mmult
   (
    input logic         clk,
    input logic         rst_n,
 
    // signals from ex stage
-   input logic         bnn_en_i,
-   input logic [2:0]   bnn_operator_i,
-   input logic [6:0]   bnn_param_i,
-   input logic [31:0]  bnn_addr_i,
-   input logic [31:0]  bnn_data_i,
+   input logic         mmult_en_i,
+   input logic [2:0]   mmult_operator_i,
+   input logic [6:0]   mmult_param_i,
+   input logic [31:0]  mmult_addr_i,
+   input logic [31:0]  mmult_data_i,
 
-   output logic [31:0] bnn_result_o,
-   output logic        bnn_ready_o
+   output logic [31:0] mmult_result_o,
+   output logic        mmult_ready_o
    );
 
+// operator
+// 100 : nop //TEMP//
+// 101 : mmult32
 
    reg [63:0]          param;
 
-   wire [15:0]         param_addr = {1'b0,bnn_addr_i[7:0]}+{bnn_param_i[4:0],4'h0};
+   wire [15:0]         param_addr = {1'b0,mmult_addr_i[7:0]}+{mmult_param_i[4:0],4'h0};
    
    ram0 ram0 (clk, param_addr[15:0], param);
 
-   reg                 bnn_en_1;
+   reg                 mmult_en_1;
    reg [2:0]           com_1;
    reg [1:0]           sft_1;
    reg [31:0]          addr_1;
    reg [31:0]          data_1;
    reg                 busy;
-   wire                bnn_en = bnn_en_i&~busy;
+   wire                mmult_en = mmult_en_i&~busy;
 
 // input stage
    always_ff @(posedge clk)begin
-      addr_1[31:0] <= bnn_addr_i;
-      data_1[31:0] <= bnn_data_i;
-      sft_1[1:0]   <= bnn_param_i[6:5];
-      if(bnn_en)begin
-         bnn_en_1 <= 1'b1;
-         com_1[2:0] <= bnn_operator_i;
+      addr_1[31:0] <= mmult_addr_i;
+      data_1[31:0] <= mmult_data_i;
+      sft_1[1:0]   <= mmult_param_i[6:5];
+      if(mmult_en)begin
+         mmult_en_1 <= 1'b1;
+         com_1[2:0] <= mmult_operator_i;
       end else begin
-         bnn_en_1 <= 1'b0;
+         mmult_en_1 <= 1'b0;
          com_1[2:0] <= 3'b100;
       end
    end
@@ -105,15 +108,15 @@ module zeroriscy_bnn
    end
 
 // 3rd stage for IP8
-   logic [31:0] bnn_result;
-   assign bnn_result_o = {IP0_3, IP1_3};
+   logic [31:0] mmult_result;
+   assign mmult_result_o = {IP0_3, IP1_3};
 
-   assign bnn_ready_o = ~bnn_en_1&(com_2!=3'b101);
+   assign mmult_ready_o = ~mmult_en_1&(com_2!=3'b101);
 
    always_ff @(posedge clk)begin
-      if((bnn_en  &(bnn_operator_i[2:0]==3'b101))|
-         (bnn_en_1&         (com_1[2:0]==3'b101))|
-         (                  (com_2[2:0]==3'b101))  )
+      if((mmult_en  &(mmult_operator_i[2:0]==3'b101))|
+         (mmult_en_1&           (com_1[2:0]==3'b101))|
+         (                      (com_2[2:0]==3'b101))  )
         busy <= 1'b1;
       else
         busy <= 1'b0;

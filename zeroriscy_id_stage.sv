@@ -94,12 +94,12 @@ module zeroriscy_id_stage
     output logic [31:0] multdiv_operand_a_ex_o,
     output logic [31:0] multdiv_operand_b_ex_o,
 
-    // BNN
-    output logic        bnn_en_ex_o,
-    output logic [2:0]  bnn_operator_ex_o,
-    output logic [6:0]  bnn_param_ex_o,
-    output logic [31:0] bnn_operand_addr_ex_o,
-    output logic [31:0] bnn_operand_data_ex_o,
+    // MMULT
+    output logic        mmult_en_ex_o,
+    output logic [2:0]  mmult_operator_ex_o,
+    output logic [6:0]  mmult_param_ex_o,
+    output logic [31:0] mmult_operand_addr_ex_o,
+    output logic [31:0] mmult_operand_data_ex_o,
 
     // CSR
     output logic        csr_access_ex_o,
@@ -188,7 +188,7 @@ module zeroriscy_id_stage
   logic        multdiv_stall;
   logic        branch_stall;
   logic        jump_stall;
-  logic        bnn_stall;
+  logic        mmult_stall;
 
   logic        halt_id;
   //FSM signals to write back multi cycles instructions
@@ -245,10 +245,10 @@ module zeroriscy_id_stage
   logic [1:0]  multdiv_operator;
   logic [1:0]  multdiv_signed_mode;
 
-  // BNN Control
-  logic        bnn_en;      // use BNN
-  logic [2:0]  bnn_operator;
-  logic [6:0]  bnn_param;
+  // MMULT Control
+  logic        mmult_en;      // use MMULT
+  logic [2:0]  mmult_operator;
+  logic [6:0]  mmult_param;
 
   // Data Memory Control
   logic        data_we_id;
@@ -508,9 +508,9 @@ module zeroriscy_id_stage
     .multdiv_operator_o              ( multdiv_operator          ),
     .multdiv_signed_mode_o           ( multdiv_signed_mode       ),
 
-    .bnn_en_o                        ( bnn_en                    ),
-    .bnn_operator_o                  ( bnn_operator              ),
-    .bnn_param_o                     ( bnn_param                 ),
+    .mmult_en_o                      ( mmult_en                  ),
+    .mmult_operator_o                ( mmult_operator            ),
+    .mmult_param_o                   ( mmult_param               ),
     // Register file control signals
     .regfile_we_o                    ( regfile_we_id             ),
 
@@ -682,12 +682,12 @@ module zeroriscy_id_stage
   assign multdiv_operand_a_ex_o      = regfile_data_ra_id;
   assign multdiv_operand_b_ex_o      = regfile_data_rb_id;
 
-  assign bnn_en_ex_o                 = bnn_en;
-  assign bnn_operand_addr_ex_o       = alu_operand_a;
-  assign bnn_operand_data_ex_o       = alu_operand_b;
+  assign mmult_en_ex_o               = mmult_en;
+  assign mmult_operand_addr_ex_o     = alu_operand_a;
+  assign mmult_operand_data_ex_o     = alu_operand_b;
 
-  assign bnn_operator_ex_o           = bnn_operator;
-  assign bnn_param_ex_o              = bnn_param;
+  assign mmult_operator_ex_o         = mmult_operator;
+  assign mmult_param_ex_o            = mmult_param;
 
   enum logic { IDLE, WAIT_MULTICYCLE } id_wb_fsm_cs, id_wb_fsm_ns;
 
@@ -719,7 +719,7 @@ module zeroriscy_id_stage
     multdiv_stall   = 1'b0;
     jump_stall      = 1'b0;
     branch_stall    = 1'b0;
-    bnn_stall       = 1'b0;
+    mmult_stall     = 1'b0;
     select_data_rf  = RF_EX;
     instr_multicyle = 1'b0;
     branch_set_n    = 1'b0;
@@ -759,12 +759,12 @@ module zeroriscy_id_stage
             multdiv_stall   = 1'b1;
             instr_multicyle = 1'b1;
           end
-          bnn_en: begin
-            //BNN operation
+          mmult_en: begin
+            //MMULT operation
             regfile_we      = 1'b0;
-            if((bnn_operator==3'b100)|(bnn_operator==3'b101))begin
+            if(mmult_operator==3'b101)begin
                id_wb_fsm_ns    = WAIT_MULTICYCLE;
-               bnn_stall       = 1'b1;
+               mmult_stall     = 1'b1;
                instr_multicyle = 1'b1;
             end
           end
@@ -796,8 +796,8 @@ module zeroriscy_id_stage
               load_stall    = 1'b1;
             multdiv_int_en:
               multdiv_stall = 1'b1;
-            bnn_en:
-              bnn_stall = 1'b1;
+            mmult_en:
+              mmult_stall = 1'b1;
             default:;
           endcase
         end
@@ -808,7 +808,7 @@ module zeroriscy_id_stage
   end
 
   // stall control
-  assign id_ready_o = (~load_stall) & (~branch_stall) & (~jump_stall) & (~multdiv_stall) & (~bnn_stall) & (~wb_stall) & (~raw_stall);
+  assign id_ready_o = (~load_stall) & (~branch_stall) & (~jump_stall) & (~multdiv_stall) & (~mmult_stall) & (~wb_stall) & (~raw_stall);
   assign id_valid_o = (~halt_id) & id_ready_o;
   assign wb_stall   = lsu_stall_i;
 
