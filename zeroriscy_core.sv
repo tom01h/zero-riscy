@@ -146,6 +146,8 @@ module zeroriscy_core
   logic [6:0]  mmult_param_ex;
   logic [31:0] mmult_operand_addr_ex;
   logic [31:0] mmult_operand_data_ex;
+  logic        mmult_stall;
+  logic [31:0] mmult_result;
 
   // CSR control
   logic        csr_access_ex;
@@ -410,6 +412,7 @@ module zeroriscy_core
     .mmult_param_ex_o             ( mmult_param_ex        ),
     .mmult_operand_addr_ex_o      ( mmult_operand_addr_ex ),
     .mmult_operand_data_ex_o      ( mmult_operand_data_ex ),
+    .mmult_stall_o                ( mmult_stall           ),
 
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
@@ -460,6 +463,7 @@ module zeroriscy_core
 
     // write data to commit in the register file
     .regfile_wdata_lsu_i          ( regfile_wdata_lsu    ),
+    .regfile_wdata_mmult_i        ( mmult_result         ),
     .regfile_wdata_ex_i           ( regfile_wdata_ex     ),
     .csr_rdata_i                  ( csr_rdata            ),
 
@@ -494,6 +498,7 @@ module zeroriscy_core
     .multdiv_operand_b_i        ( multdiv_operand_b_ex  ),
     .alu_adder_result_ex_o      ( alu_adder_result_ex   ), // from ALU to LSU
     .regfile_wdata_ex_o         ( regfile_wdata_ex      ),
+    .mmult_result_o             ( mmult_result          ),
 
     // MMULT
     .mmult_en_i                 ( mmult_en_ex           ),
@@ -501,6 +506,7 @@ module zeroriscy_core
     .mmult_param_i              ( mmult_param_ex        ),
     .mmult_operand_addr_i       ( mmult_operand_addr_ex ),
     .mmult_operand_data_i       ( mmult_operand_data_ex ),
+    .mmult_stall_i              ( mmult_stall           ),
 
     // To IF: Jump and branch target and decision
     .jump_target_o              ( jump_target_ex        ),
@@ -734,8 +740,7 @@ module zeroriscy_core
 
     .ex_data_wdata  ( data_wdata_o                         ),
 
-    .lsu_reg_waddr  ( (lsu_stall)?0:id_stage_i.regfile_waddr_wb ),
-    .lsu_reg_wdata  ( regfile_wdata_lsu                    ),
+    .wb_reg_waddr   ( (lsu_stall)?0:id_stage_i.regfile_waddr_wb ),
 
     .imm_u_type     ( id_stage_i.imm_u_type                ),
     .imm_uj_type    ( id_stage_i.imm_uj_type               ),

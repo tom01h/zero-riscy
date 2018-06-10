@@ -22,9 +22,9 @@ module zeroriscy_mmult
    input logic [6:0]   mmult_param_i,
    input logic [31:0]  mmult_addr_i,
    input logic [31:0]  mmult_data_i,
+   input logic         mmult_stall_i,
 
-   output logic [31:0] mmult_result_o,
-   output logic        mmult_ready_o
+   output logic [31:0] mmult_result_o
    );
 
 // operator
@@ -35,31 +35,30 @@ module zeroriscy_mmult
 
    wire [15:0]         param_addr = {1'b0,mmult_addr_i[7:0]}+{mmult_param_i[4:0],4'h0};
    
-   ram0 ram0 (clk, param_addr[15:0], param);
+   ram0 ram0 (clk, mmult_en_i, param_addr[15:0], param);
 
    reg                 mmult_en_1;
    reg [2:0]           com_1;
    reg [1:0]           sft_1;
    reg [31:0]          addr_1;
    reg [31:0]          data_1;
-   reg                 busy;
-   wire                mmult_en = mmult_en_i&~busy;
 
 // input stage
    always_ff @(posedge clk)begin
-      addr_1[31:0] <= mmult_addr_i;
-      data_1[31:0] <= mmult_data_i;
-      sft_1[1:0]   <= mmult_param_i[6:5];
-      if(mmult_en)begin
+      if(mmult_en_i)begin
          mmult_en_1 <= 1'b1;
          com_1[2:0] <= mmult_operator_i;
-      end else begin
+         addr_1[31:0] <= mmult_addr_i;
+         data_1[31:0] <= mmult_data_i;
+         sft_1[1:0]   <= mmult_param_i[6:5];
+      end else if(~mmult_stall_i)begin
          mmult_en_1 <= 1'b0;
          com_1[2:0] <= 3'b100;
       end
    end
 
 // 1st stage for IP8
+   reg                 mmult_en_2;
    reg [2:0]           com_2;
    reg [1:0]           sft_2;
    reg [23:0]          inA_2;
@@ -67,12 +66,19 @@ module zeroriscy_mmult
    reg [23:0]          inB1_2;
    reg [31:0]          inC_2;
    always_ff @(posedge clk)begin
-      com_2[2:0]  <= com_1[2:0];
-      sft_2[1:0]  <= sft_1[1:0];
-      inA_2[23:0] <= addr_1[31:8];
-      inC_2[31:0] <= data_1[31:0];
-      inB0_2[23:0] <= param[31+ 32:8+ 32];
-      inB1_2[23:0] <= param[31+  0:8+  0];
+      if(~mmult_stall_i)begin
+         if(mmult_en_1)begin
+            mmult_en_2   <= 1'b1;
+            com_2[2:0]   <= com_1[2:0];
+            sft_2[1:0]   <= sft_1[1:0];
+            inA_2[23:0]  <= addr_1[31:8];
+            inC_2[31:0]  <= data_1[31:0];
+            inB0_2[23:0] <= param[31+ 32:8+ 32];
+            inB1_2[23:0] <= param[31+  0:8+  0];
+         end else begin
+            mmult_en_2 <= 1'b0;
+         end
+      end
    end
 
 // 2nd stage for IP8
@@ -82,50 +88,48 @@ module zeroriscy_mmult
    wire signed [19:0]  ip1 = ($signed(inA_2[23:16])*$signed(inB1_2[23:16]) +
                               $signed(inA_2[15:8] )*$signed(inB1_2[15:8])  +
                               $signed(inA_2[7:0]  )*$signed(inB1_2[7:0] )   );
+   reg                 mmult_en_3;
    reg [2:0]           com_3;
    reg [15:0]          IP0_3;
    reg [15:0]          IP1_3;
    always_ff @(posedge clk)begin
-      com_3[2:0] <= com_2[2:0];
-      case(sft_2)
-        2'b00:begin
-           IP0_3 <= ip0[15:0]+inC_2[31:16];
-           IP1_3 <= ip1[15:0]+inC_2[15:0];
-        end
-        2'b01:begin
-           IP0_3 <= ip0[16:1]+inC_2[31:16];
-           IP1_3 <= ip1[16:1]+inC_2[15:0];
-        end
-        2'b10:begin
-           IP0_3 <= ip0[17:2]+inC_2[31:16];
-           IP1_3 <= ip1[17:2]+inC_2[15:0];
-        end
-        2'b11:begin
-           IP0_3 <= ip0[19:4]+inC_2[31:16];
-           IP1_3 <= ip1[19:4]+inC_2[15:0];
-        end
-      endcase
+      if(~mmult_stall_i)begin
+         if(mmult_en_2)begin
+            mmult_en_3 <= 1'b1;
+            com_3[2:0] <= com_2[2:0];
+            case(sft_2)
+              2'b00:begin
+                 IP0_3 <= ip0[15:0]+inC_2[31:16];
+                 IP1_3 <= ip1[15:0]+inC_2[15:0];
+              end
+              2'b01:begin
+                 IP0_3 <= ip0[16:1]+inC_2[31:16];
+                 IP1_3 <= ip1[16:1]+inC_2[15:0];
+              end
+              2'b10:begin
+                 IP0_3 <= ip0[17:2]+inC_2[31:16];
+                 IP1_3 <= ip1[17:2]+inC_2[15:0];
+              end
+              2'b11:begin
+                 IP0_3 <= ip0[19:4]+inC_2[31:16];
+                 IP1_3 <= ip1[19:4]+inC_2[15:0];
+              end
+            endcase
+         end else begin // if (mmult_en_2)
+            mmult_en_3 <= 1'b0;
+         end
+      end
    end
 
 // 3rd stage for IP8
    logic [31:0] mmult_result;
    assign mmult_result_o = {IP0_3, IP1_3};
 
-   assign mmult_ready_o = ~mmult_en_1&(com_2!=3'b101);
-
-   always_ff @(posedge clk)begin
-      if((mmult_en  &(mmult_operator_i[2:0]==3'b101))|
-         (mmult_en_1&           (com_1[2:0]==3'b101))|
-         (                      (com_2[2:0]==3'b101))  )
-        busy <= 1'b1;
-      else
-        busy <= 1'b0;
-   end
-
 endmodule
 
-module ram0 (clk, addr, dout);
+module ram0 (clk, en, addr, dout);
    input clk;
+   input en;
    input [15:0] addr;
    output [63:0] dout;
 `include "param0.v"
@@ -133,6 +137,7 @@ module ram0 (clk, addr, dout);
 
    always @(posedge clk)
      begin
-        dout <= mem[addr];
+        if(en)
+          dout <= mem[addr];
      end
 endmodule

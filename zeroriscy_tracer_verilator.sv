@@ -76,8 +76,7 @@ module zeroriscy_tracer
     input logic [31:0]                 ex_data_addr,
     input logic [31:0]                 ex_data_wdata,
 
-    input logic [4:0]                  lsu_reg_waddr,
-    input logic [31:0]                 lsu_reg_wdata,
+    input logic [4:0]                  wb_reg_waddr,
 
     input logic [31:0]                 imm_u_type,
     input logic [31:0]                 imm_uj_type,
@@ -147,7 +146,7 @@ module zeroriscy_tracer
       );
       begin
          $fwrite(f, "%15d                                                         ", cycles);
-         $fwrite(f, " x%02d<%08x\n", lsu_reg_waddr, lsu_reg_wdata);
+         $fwrite(f, " x%02d<%08x\n", wb_reg_waddr, ex_reg_wdata);
       end
    endfunction
 
@@ -168,8 +167,8 @@ module zeroriscy_tracer
 
          if (reg_rd.addr != 0)
            $fwrite(f, " x%02d=%08x", reg_rd.addr, reg_rd.value);
-         else if(lsu_reg_waddr != 0)
-           $fwrite(f, " x%02d<%08x", lsu_reg_waddr, lsu_reg_wdata);
+         else if(wb_reg_waddr != 0)
+           $fwrite(f, " x%02d<%08x", wb_reg_waddr, ex_reg_wdata);
          else
            $fwrite(f, "             ");
          if (reg_rs1.addr != 0)
@@ -201,6 +200,17 @@ module zeroriscy_tracer
       begin
          reg_rd.addr = rd;
          reg_rd.value = ex_reg_wdata;
+         reg_rs1.addr = rs1;
+         reg_rs1.value = rs1_value;
+         reg_rs2.addr = rs2;
+         reg_rs2.value = rs2_value;
+         str = $sformatf("%16s x%02d, x%02d, x%02d      ", mnemonic, rd, rs1, rs2);
+      end
+
+   endfunction
+
+   function void printDInstr(input string mnemonic);
+      begin
          reg_rs1.addr = rs1;
          reg_rs1.value = rs1_value;
          reg_rs2.addr = rs2;
@@ -297,9 +307,6 @@ module zeroriscy_tracer
                 return;
              end
          endcase
-
-         //reg_rd.addr = rd;
-         //reg_rd.value = lsu_reg_wdata;
 
          if (instr[14:12] != 3'b111) begin
             // regular load
@@ -416,14 +423,14 @@ module zeroriscy_tracer
                {25'b?, OPCODE_LOAD}:  if(ex_data_gnt) printLoadInstr();
                {25'b?, OPCODE_STORE}: if(ex_data_gnt) printStoreInstr();
                // RV32Xmmult
-               INSTR_MMULT32:    printRInstr("mmult32         ");
+               INSTR_MMULT32:    printDInstr("mmult32         ");
                default:          printMnemonic("INVALID                             ");
              endcase // unique case (instr)
 
              //if(~ex_data_req|data_valid_lsu)
              printInstrTrace(f, cycles, pc, instr, str);
 
-          end else if (lsu_reg_waddr != 0) begin
+          end else if (wb_reg_waddr != 0) begin
              printWbTrace(f, cycles);
           end
      end // always @ (posedge clk)

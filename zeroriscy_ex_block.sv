@@ -54,6 +54,7 @@ module zeroriscy_ex_block
 
   output logic [31:0]             alu_adder_result_ex_o,
   output logic [31:0]             regfile_wdata_ex_o,
+  output logic [31:0]             mmult_result_o,
 
   // MMULT
   input logic                     mmult_en_i,
@@ -61,6 +62,7 @@ module zeroriscy_ex_block
   input logic [6:0]               mmult_param_i,
   input logic [31:0]              mmult_operand_addr_i,
   input logic [31:0]              mmult_operand_data_i,
+  input logic                     mmult_stall_i,
 
   // To IF: Jump and branch target and decision
   output logic [31:0]             jump_target_o,
@@ -73,13 +75,11 @@ module zeroriscy_ex_block
   output logic                    ex_ready_o      // EX stage gets new data
 );
 
-  logic [31:0] alu_result, multdiv_result, mmult_result;
+  logic [31:0] alu_result, multdiv_result;
 
   logic        alu_cmp_result;
   logic        multdiv_ready;
   logic        multdiv_en;
-
-  logic        mmult_ready;
 
 /*
   The multdiv_i output is never selected if RV32M=0
@@ -99,8 +99,6 @@ endgenerate
       unique case (1'b1)
         multdiv_en:
           regfile_wdata_ex_o = multdiv_result;
-        mmult_en_i:
-          regfile_wdata_ex_o = mmult_result;
         default:
           regfile_wdata_ex_o = alu_result;
       endcase
@@ -161,9 +159,9 @@ endgenerate
     .mmult_param_i       ( mmult_param_i             ),
     .mmult_addr_i        ( mmult_operand_addr_i      ),
     .mmult_data_i        ( mmult_operand_data_i      ),
+    .mmult_stall_i       ( mmult_stall_i             ),
 
-    .mmult_result_o      ( mmult_result              ),
-    .mmult_ready_o       ( mmult_ready               )
+    .mmult_result_o      ( mmult_result_o            )
    );
 
   always_comb
@@ -173,8 +171,6 @@ endgenerate
           ex_ready_o = multdiv_ready;
         lsu_en_i:
           ex_ready_o = lsu_ready_ex_i;
-        mmult_en_i:
-          ex_ready_o = mmult_ready;
         default:
           //1 Cycle case
           ex_ready_o = 1'b1;

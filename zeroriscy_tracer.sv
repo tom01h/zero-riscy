@@ -76,8 +76,7 @@ module zeroriscy_tracer
   input  logic [31:0] ex_data_addr,
   input  logic [31:0] ex_data_wdata,
 
-  input  logic [4:0]  lsu_reg_waddr,
-  input  logic [31:0] lsu_reg_wdata,
+  input  logic [4:0]  wb_reg_waddr,
 
   input  logic [31:0] imm_u_type,
   input  logic [31:0] imm_uj_type,
@@ -135,7 +134,7 @@ module zeroriscy_tracer
     function void printWbTrace();
       begin
         $fwrite(f, "%t %15d %-54s", simtime, cycles, "");
-        $fwrite(f, " %s<%08x\n", regAddrToStr(lsu_reg_waddr), lsu_reg_wdata);
+        $fwrite(f, " %s<%08x\n", regAddrToStr(wb_reg_waddr), ex_reg_wdata);
       end
     endfunction
 
@@ -157,8 +156,8 @@ module zeroriscy_tracer
           end
         end
 
-        if ((wb==0)&(lsu_reg_waddr != 0))
-           $fwrite(f, " %s<%08x", regAddrToStr(lsu_reg_waddr), lsu_reg_wdata);
+        if ((wb==0)&(wb_reg_waddr != 0))
+           $fwrite(f, " %s<%08x", regAddrToStr(wb_reg_waddr), ex_reg_wdata);
 
         foreach(regs_read[i]) begin
           if (regs_read[i].addr != 0)
@@ -186,6 +185,14 @@ module zeroriscy_tracer
         regs_read.push_back('{rs1, rs1_value});
         regs_read.push_back('{rs2, rs2_value});
         regs_write.push_back('{rd, 'x});
+        str = $sformatf("%-16s x%0d, x%0d, x%0d", mnemonic, rd, rs1, rs2);
+      end
+    endfunction // printRInstr
+
+    function void printDInstr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_read.push_back('{rs2, rs2_value});
         str = $sformatf("%-16s x%0d, x%0d, x%0d", mnemonic, rd, rs1, rs2);
       end
     endfunction // printRInstr
@@ -266,8 +273,6 @@ module zeroriscy_tracer
             return;
           end
         endcase
-
-        //regs_write.push_back('{rd, 'x});
 
         if (instr[14:12] != 3'b111) begin
           // regular load
@@ -416,7 +421,7 @@ module zeroriscy_tracer
         {25'b?, OPCODE_LOAD}:   if(ex_data_gnt)    trace.printLoadInstr();
         {25'b?, OPCODE_STORE}:  if(ex_data_gnt)    trace.printStoreInstr();
         // RV32Xmmult
-        INSTR_MMULT32:    trace.printRInstr("mmult32");
+        INSTR_MMULT32:    trace.printDInstr("mmult32");
         default:          trace.printMnemonic("INVALID");
       endcase // unique case (instr)
 
@@ -446,7 +451,7 @@ module zeroriscy_tracer
         end
      trace.printInstrTrace();
 
-    end else if (lsu_reg_waddr != 0) begin
+    end else if (wb_reg_waddr != 0) begin
       trace.simtime    = $time;
       trace.cycles     = cycles;
       trace.printWbTrace();
